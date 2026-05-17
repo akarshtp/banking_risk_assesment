@@ -1,0 +1,48 @@
+# === Python ===
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.venv
+venv/
+ENV/
+env/
+
+# === Environment Variables / Secrets (CRITICAL FOR BANKING BOT) ===
+.env
+.env.local
+.env.*
+secrets.json
+*.pem
+*.key
+
+# === Cursor / VS Code ===
+.workspace
+.vscode/
+# Note: If you want to share launch configurations with team members, 
+# you can comment out the .vscode/ line above, but keep the below:
+.vscode/settings.json
+.vscode/tasks.json
+.vscode/launch.json
+.vscode/extensions.json
+.history/
+
+# === Vector Databases & Data Cache (If using RAG/FAISS/Chroma) ===
+*.db
+*.sqlite
+data/
+vector_store/
+faiss_index/
+.chroma/
+
+# === Windows System Files ===
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# === Logs ===
+*.log
+logs/
+
+Screenshots/
