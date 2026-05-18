@@ -1,4 +1,7 @@
-# --- Core Application (Week 2) ---
+# 1. CRITICAL SPEEDUP: Forces pip to download the ~200MB CPU version of PyTorch instead of the ~2.5GB GPU version
+--extra-index-url https://download.pytorch.org/whl/cpu
+
+# --- Core Application ---
 streamlit>=1.26.0
 fastapi>=0.100.0
 uvicorn[standard]>=0.23.0
@@ -15,28 +18,22 @@ langchain-core>=0.1.34
 langchain-community>=0.0.31
 langchain-anthropic>=0.1.10
 langchain-openai>=0.3.0
-anthropic>=0.21.3
-openai>=1.14.0
-tiktoken>=0.6.0
 
-# --- Vector Databases (Week 3 Swappable DBs) ---
+# --- Vector Databases ---
 chromadb>=0.4.15
-pinecone-client>=3.1.0
-faiss-cpu>=1.8.0
-langchain-pinecone>=0.1.0
+pinecone-client>=3.1.0       # Uncomment if you actively switch to Pinecone in config.py
+langchain-pinecone>=0.1.0    # Uncomment if you actively switch to Pinecone in config.py
 
 # --- Retrieval & Re-ranking (Week 3) ---
 sentence-transformers>=2.6.1
-transformers>=4.35.0
-torch>=2.0.0
-rank_bm25>=0.2.2
+# Note: 'torch' and 'transformers' are automatically installed by sentence-transformers
 
 # --- Document Parsing & Ingestion (Week 3) ---
+# Replaced massive unstructured OCR dependencies with lightweight native parsers
+pypdf>=4.0.0
 unstructured>=0.12.5
-unstructured[pdf,docx,csv]>=0.12.5
-pdfplumber>=0.11.0
-pytesseract>=0.3.10
-pillow>=10.2.0
+python-docx>=1.1.0
+markdown>=3.5.2
 
 # --- Evaluation Harness (Week 3) ---
 ragas>=0.1.4

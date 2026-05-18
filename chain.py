@@ -15,6 +15,9 @@ from memory_manager import memory_manager
 from schemas import LoanDecision, Citation
 from logger_config import app_logger, log_interaction
 
+from langchain_anthropic import ChatAnthropic
+from langchain_openai import ChatOpenAI  # Add this line
+
 load_dotenv()
 
 
@@ -39,15 +42,15 @@ def get_primary_llm():
 
 def get_fallback_llm():
     """
-    OBJECTIVE 8: Fallback model — uses same model with lower max_tokens for resilience.
+    OBJECTIVE 8: Fallback model — uses OpenAI for resilience 
+    if the primary Anthropic model fails.
     """
-    return ChatAnthropic(
-        model=MODEL_NAME,
-        api_key=os.getenv("ANTHROPIC_API_KEY"),
+    return ChatOpenAI(
+        model=os.getenv("OPENAI_MODEL", "gpt-4o-mini"), # You can change this to gpt-4o or gpt-3.5-turbo
+        api_key=os.getenv("OPENAI_API_KEY"),
         max_tokens=1500,
         temperature=0.1,
     )
-
 
 # ─────────────────────────────────────────────────────────────────────────────
 # OBJECTIVE 4: Build few-shot example selector (done once at startup)
