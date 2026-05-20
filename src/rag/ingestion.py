@@ -11,10 +11,10 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 # Ensure you run: pip install langchain-experimental
 from langchain_experimental.text_splitter import SemanticChunker 
 
-from rag.config import CHUNK_SIZE, CHUNK_OVERLAP, CHUNK_STRATEGY
-from rag.vector_store import get_embeddings, get_vector_store
-from schemas import JobState
-from logger_config import app_logger
+from src.rag.config import CHUNK_SIZE, CHUNK_OVERLAP, CHUNK_STRATEGY
+from src.rag.vector_store import get_embeddings, get_vector_store
+from src.core.schemas import JobState
+from src.core.logger_config import app_logger
 
 INGESTION_JOBS: Dict[str, Dict[str, Any]] = {}
 

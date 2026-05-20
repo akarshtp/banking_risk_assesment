@@ -8,7 +8,7 @@ from langchain_community.vectorstores import Chroma, FAISS
 from langchain_pinecone import PineconeVectorStore
 from pinecone import Pinecone, ServerlessSpec
 
-from rag.config import (
+from src.rag.config import (
     VECTOR_STORE_TYPE,
     OPENAI_API_KEY,
     EMBEDDING_MODEL,
@@ -19,7 +19,7 @@ from rag.config import (
     CHROMA_PERSIST_DIR,
     FAISS_INDEX_PATH
 )
-from logger_config import app_logger
+from src.core.logger_config import app_logger
 
 def get_embeddings():
     """
@@ -56,7 +56,12 @@ def get_vector_store():
         if PINECONE_INDEX_NAME not in pc.list_indexes().names():
             app_logger.info(f"Creating Pinecone index: {PINECONE_INDEX_NAME}")
             # Determine dimensions based on adapter selection
-            dimension = 384 if EMBEDDING_PROVIDER == "huggingface" else 1536
+            if EMBEDDING_PROVIDER == "huggingface":
+                dimension = 384
+            elif EMBEDDING_PROVIDER == "cohere":
+                dimension = 1024
+            else:
+                dimension = 1536 # OpenAI
             pc.create_index(
                 name=PINECONE_INDEX_NAME,
                 dimension=dimension,

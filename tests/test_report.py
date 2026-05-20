@@ -8,8 +8,8 @@
 #   4. Generates a readable test_reports/test_report_<timestamp>.md
 #
 # Run:
-#   1. Make sure the API is running: uvicorn api:app --reload --port 8000
-#   2. Then: python test_report.py
+#   1. Make sure the API is running: uvicorn src.api.server:app --reload --port 8000
+#   2. Then: python tests/test_report.py
 # =============================================================================
 
 import os
@@ -24,7 +24,7 @@ TIMEOUT = 120.0
 # ─────────────────────────────────────────────────────────────────────────────
 # OUTPUT DIRECTORY
 # ─────────────────────────────────────────────────────────────────────────────
-REPORT_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "test_reports")
+REPORT_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "test_reports")
 os.makedirs(REPORT_DIR, exist_ok=True)
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -524,7 +524,7 @@ if __name__ == "__main__":
         print(f"   Tools:  {health_data['tools_available']}")
     except Exception:
         print("❌ API is not running! Start it first:")
-        print("   uvicorn api:app --reload --port 8000")
+        print("   uvicorn src.api.server:app --reload --port 8000")
         exit(1)
 
     # Run all tests

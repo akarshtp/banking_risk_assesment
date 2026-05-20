@@ -1,0 +1,75 @@
+name: Build and Test
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build API Image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          load: true
+          tags: loan-underwriter-api:test
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build UI Image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile.ui
+          load: true
+          tags: loan-underwriter-ui:test
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Verify Image Sizes
+        run: |
+          echo "Image Size Report:"
+          docker images --format "table {{.Repository}}\t{{.Tag}}\t{{.Size}}" | grep loan-underwriter
+
+      - name: Smoke Test (Container Startup)
+        run: |
+          # Use docker compose to start up the services in detached mode
+          # Note: We need a dummy .env for CI
+          touch .env
+          echo "ANTHROPIC_API_KEY=dummy" >> .env
+          
+          docker compose up -d
+          
+          echo "Waiting for services to initialize..."
+          sleep 30
+          
+          docker compose ps
+          
+          # Check health of API
+          if ! curl -f http://localhost:8000/health; then
+            echo "API Healthcheck failed"
+            docker compose logs api
+            exit 1
+          fi
+          
+          # Check health of UI
+          if ! curl -f http://localhost:8501/_stcore/health; then
+            echo "UI Healthcheck failed"
+            docker-compose logs ui
+            exit 1
+          fi
+          
+          docker-compose down

@@ -17,7 +17,7 @@ PINECONE_API_KEY = os.getenv("PINECONE_API_KEY")
 PINECONE_INDEX_NAME = os.getenv("PINECONE_INDEX_NAME", "banking-risk-rag")
 
 # Local DB Paths
-DATA_DIR = os.path.join(os.path.dirname(__file__), "..", "data")
+DATA_DIR = os.path.join(os.path.dirname(__file__), "..", "..", "data")
 CHROMA_PERSIST_DIR = os.path.join(DATA_DIR, "chroma_db")
 FAISS_INDEX_PATH = os.path.join(DATA_DIR, "faiss_index")
 

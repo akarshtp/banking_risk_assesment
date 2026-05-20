@@ -9,23 +9,41 @@ The assistant analyzes loan applications using 3 specialized tools — credit sc
 ## Project Structure
 
 ```
-week2_project/
-├── api.py                # FastAPI backend server (/chat, /reset, /health)
-├── app.py                # Streamlit chat frontend (calls the API)
-├── chain.py              # Core LangChain agent 
-├── tools.py              # 3 custom tools (Credit Score, Doc Verify, DTI)
-├── prompts.py            # Few-shot prompt templates with semantic selection
-├── schemas.py            # Pydantic models for all inputs and outputs
-├── memory_manager.py     # Multi-turn conversation memory (10 turns)
-├── logger_config.py      # Structured JSON logging setup
-├── test_report.py        # Test runner — sends 20 queries, generates report
-├── requirements.txt      # Python dependencies
-├── .env                  # API key 
+loan_underwriter_project/
+├── src/
+│   ├── api/
+│   │   └── server.py         # FastAPI backend server (/chat, /reset, /health)
+│   ├── frontend/
+│   │   └── app.py            # Streamlit chat frontend (calls the API)
+│   ├── agent/
+│   │   ├── chain.py          # Core LangChain agent 
+│   │   ├── tools.py          # 4 custom tools (Credit Score, Doc Verify, DTI, Retrieval)
+│   │   ├── prompts.py        # Few-shot prompt templates with semantic selection
+│   │   └── memory_manager.py # Multi-turn conversation memory (10 turns)
+│   ├── core/
+│   │   ├── schemas.py        # Pydantic models for all inputs and outputs
+│   │   └── logger_config.py  # Structured JSON logging setup
+│   └── rag/
+│       ├── config.py         # RAG configuration
+│       ├── ingestion.py      # Document ingestion pipeline
+│       ├── retrieval.py      # Document retrieval pipeline
+│       ├── vector_store.py   # Vector DB initialization
+│       └── evaluator.py      # Evaluation suite logic
+├── eval/
+│   ├── intrinsic.py          # Intrinsic RAG metrics
+│   ├── llm_judge.py          # LLM as a Judge logic
+│   ├── run_eval.py           # Evaluation runner script
+│   └── golden_set.json       # Golden dataset for evaluation
+├── tests/
+│   └── test_report.py        # Test runner — sends 20 queries, generates report
+├── data/                     # Vector databases and sample data
+├── requirements.txt          # Python dependencies
+├── .env                      # API key 
 ├── README.md             
-├── logs/                 # Auto-created at runtime
-│   ├── app.log           # System events log (JSON)
-│   └── interactions.log  # All chat interactions log (JSON)
-└── test_reports/         # Auto-created when tests run
+├── logs/                     # Auto-created at runtime
+│   ├── app.log               # System events log (JSON)
+│   └── interactions.log      # All chat interactions log (JSON)
+└── test_reports/             # Auto-created when tests run
     ├── test_results_<timestamp>.json   # Timestamped raw results
     ├── test_report_<timestamp>.md      # Timestamped readable report
     ├── test_results_latest.json        # Most recent run (overwritten)
@@ -83,7 +101,7 @@ ANTHROPIC_API_KEY=your-anthropic-api-key-here
 ### Step 5: Start the FastAPI backend
 
 ```bash
-uvicorn api:app --reload --port 8000
+uvicorn src.api.server:app --reload --port 8000
 ```
 
 You should see:
@@ -96,7 +114,7 @@ INFO:     🚀 Loan Underwriting API starting up...
 ### Step 6: Start the Streamlit frontend (new terminal)
 
 ```bash
-streamlit run app.py
+streamlit run src/frontend/app.py
 ```
 
 Opens in browser at `http://localhost:8501`.
@@ -113,14 +131,14 @@ The FastAPI backend **must be running** before you run the tests:
 
 ```bash
 # Terminal 1 — keep this running
-uvicorn api:app --reload --port 8000
+uvicorn src.api.server:app --reload --port 8000
 ```
 
 ### Run the tests
 
 ```bash
 # Terminal 2
-python test_report.py
+python tests/test_report.py
 ```
 
 ### What you'll see in the terminal

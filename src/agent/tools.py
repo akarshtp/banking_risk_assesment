@@ -3,11 +3,11 @@ import random
 from typing import Optional
 from langchain_core.tools import tool
 
-from schemas import CreditScoreResult, DocumentVerificationResult, DTIResult
+from src.core.schemas import CreditScoreResult, DocumentVerificationResult, DTIResult
 
 # --- WEEK 3 IMPORTS ---
-from rag.retrieval import retrieve_documents
-from logger_config import app_logger
+from src.rag.retrieval import retrieve_documents
+from src.core.logger_config import app_logger
 
 
 # ─────────────────────────────────────────────────────────────────────────────

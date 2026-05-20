@@ -2,10 +2,10 @@ import os
 import json
 import re # <-- Add this import
 from typing import List, Dict, Any
-from schemas import EvalResult
-from logger_config import app_logger
-from rag.retrieval import retrieve_documents
-from chain import get_primary_llm
+from src.core.schemas import EvalResult
+from src.core.logger_config import app_logger
+from src.rag.retrieval import retrieve_documents
+from src.agent.chain import get_primary_llm
 
 GOLDEN_DATASET = [
     {

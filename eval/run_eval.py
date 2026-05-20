@@ -5,15 +5,15 @@ from datetime import datetime
 
 # Direct module navigation
 import sys
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from rag.retrieval import retrieve_documents
-from chain import get_underwriter_response
+from src.rag.retrieval import retrieve_documents
+from src.agent.chain import get_underwriter_response
 from eval.intrinsic import compute_hit_at_k, compute_mrr, compute_ndcg, compute_context_precision, compute_context_recall
 from eval.llm_judge import run_llm_judge
 
 GOLDEN_SET_PATH = os.path.join(os.path.dirname(__file__), "golden_set.json")
-OUTPUT_DIR = os.path.join(os.path.dirname(__file__), "..", "reports")
+OUTPUT_DIR = os.path.join(os.path.dirname(__file__), "..", "test_reports")
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
 def run_failure_analysis(intrinsic_scores: dict, extrinsic_scores: dict) -> str:
@@ -170,7 +170,7 @@ def main():
     with open(os.path.join(OUTPUT_DIR, "eval_details_latest.json"), "w") as f:
         json.dump({"summary": summary, "failures": failure_buckets, "runs": all_runs}, f, indent=2)
 
-    print(f"\n✅ Evaluation pass complete. Committed ledger saved to: reports/{report_target}")
+    print(f"\n✅ Evaluation pass complete. Committed ledger saved to: test_reports/{report_target}")
 
 if __name__ == "__main__":
     main()

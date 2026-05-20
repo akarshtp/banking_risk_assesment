@@ -46,5 +46,6 @@ $RECYCLE.BIN/
 logs/
 
 Screenshots/
+test_reports/
 
 *.zip

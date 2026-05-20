@@ -1,8 +1,8 @@
 import os
 import json
 import re
-from chain import get_fallback_llm
-from logger_config import app_logger
+from src.agent.chain import get_fallback_llm
+from src.core.logger_config import app_logger
 
 def run_llm_judge(query: str, ground_truth: str, context: str, generated_answer: str) -> dict:
     """

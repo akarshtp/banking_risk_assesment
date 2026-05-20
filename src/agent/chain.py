@@ -9,11 +9,11 @@ from langchain_anthropic import ChatAnthropic
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.messages import HumanMessage, AIMessage, ToolMessage
 
-from tools import ALL_TOOLS, TOOL_NAMES
-from prompts import build_example_selector, build_prompt
-from memory_manager import memory_manager
-from schemas import LoanDecision, Citation
-from logger_config import app_logger, log_interaction
+from src.agent.tools import ALL_TOOLS, TOOL_NAMES
+from src.agent.prompts import build_example_selector, build_prompt
+from src.agent.memory_manager import memory_manager
+from src.core.schemas import LoanDecision, Citation
+from src.core.logger_config import app_logger, log_interaction
 
 from langchain_anthropic import ChatAnthropic
 from langchain_openai import ChatOpenAI

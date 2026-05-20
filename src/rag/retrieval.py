@@ -7,9 +7,9 @@ from langchain_core.prompts import ChatPromptTemplate
 from langchain_anthropic import ChatAnthropic
 from langchain_core.output_parsers import CommaSeparatedListOutputParser
 
-from rag.config import EMBEDDING_MODEL
-from rag.vector_store import get_vector_store
-from logger_config import app_logger
+from src.rag.config import EMBEDDING_MODEL
+from src.rag.vector_store import get_vector_store
+from src.core.logger_config import app_logger
 
 # =============================================================================
 # MODELS & RE-RANKER INITIALIZATION

@@ -1,0 +1,18 @@
+version: '3.8'
+
+services:
+  evaluator:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: loan_underwriter_eval
+    # Override the default CMD to run the evaluation suite
+    command: ["python", "eval/run_eval.py"]
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+      - ./test_reports:/app/test_reports
+    env_file:
+      - .env
+    # Disabling restart for one-shot runs
+    restart: "no"

@@ -6,22 +6,22 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException, UploadFile, File, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 
-from schemas import (
+from src.core.schemas import (
     ChatRequest, ChatResponse, HealthResponse, 
     IngestResponse, JobStatusResponse, 
     RetrievalRequest, RetrievalResponse, SourceListResponse, EvalResult
 )
-from chain import get_underwriter_response
-from memory_manager import memory_manager
-from tools import TOOL_NAMES
-from logger_config import app_logger
+from src.agent.chain import get_underwriter_response
+from src.agent.memory_manager import memory_manager
+from src.agent.tools import TOOL_NAMES
+from src.core.logger_config import app_logger
 
 # --- WEEK 3 IMPORTS ---
-from rag.config import VECTOR_STORE_TYPE, DATA_DIR
-from rag.ingestion import create_job, process_document_job, INGESTION_JOBS
-from rag.retrieval import retrieve_documents
-from rag.evaluator import run_evaluation_suite
-from rag.vector_store import get_vector_store
+from src.rag.config import VECTOR_STORE_TYPE, DATA_DIR
+from src.rag.ingestion import create_job, process_document_job, INGESTION_JOBS
+from src.rag.retrieval import retrieve_documents
+from src.rag.evaluator import run_evaluation_suite
+from src.rag.vector_store import get_vector_store
 
 from dotenv import load_dotenv
 load_dotenv()
@@ -182,7 +182,7 @@ async def evaluate_rag():
         run_harness()
         
         # Read the generated summary to return a direct JSON response
-        results_path = os.path.join(DATA_DIR, "..", "reports", "eval_details_latest.json")
+        results_path = os.path.join(DATA_DIR, "..", "test_reports", "eval_details_latest.json")
         with open(results_path, "r") as f:
             eval_data = json.load(f)
             
@@ -212,4 +212,4 @@ async def list_sources():
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("api:app", host="0.0.0.0", port=8000, reload=True)
+    uvicorn.run("src.api.server:app", host="0.0.0.0", port=8000, reload=True)
