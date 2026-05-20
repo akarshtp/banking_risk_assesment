@@ -68,11 +68,18 @@ def poll_job_status(job_id: str):
 
 def call_evaluate_api():
     try:
-        response = httpx.post(f"{API_BASE_URL}/evaluate", timeout=180.0)
+        response = httpx.post(f"{API_BASE_URL}/evaluate/start", timeout=10.0)
         response.raise_for_status()
         return response.json()
     except Exception as e:
         return {"error": str(e)}
+
+def poll_eval_status(job_id: str):
+    try:
+        response = httpx.get(f"{API_BASE_URL}/evaluate/status/{job_id}", timeout=5.0)
+        return response.json()
+    except Exception:
+        return None
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -136,14 +143,31 @@ with st.sidebar:
     st.caption("Run the LLM-as-a-judge evaluation suite against the golden dataset.")
     
     if st.button("Run Evaluation", use_container_width=True):
-        with st.spinner("Evaluating retrieval & generation..."):
-            eval_result = call_evaluate_api()
-            if "error" in eval_result:
-                st.error(f"Evaluation failed: {eval_result['error']}")
-            else:
-                st.success(f"Composite Score: {eval_result.get('end_to_end_quality', 0):.2f}")
-                with st.expander("View Full Metrics"):
-                    st.json(eval_result)
+        eval_start = call_evaluate_api()
+        if "error" in eval_start:
+            st.error(f"Evaluation start failed: {eval_start['error']}")
+        else:
+            job_id = eval_start["job_id"]
+            progress_bar = st.progress(0.0)
+            status_text = st.empty()
+            
+            while True:
+                status = poll_eval_status(job_id)
+                if status:
+                    progress_bar.progress(status["progress"])
+                    status_text.caption(status["message"])
+                    if status["state"] in ["completed", "failed"]:
+                        if status["state"] == "completed":
+                            st.success("Evaluation completed successfully!")
+                            eval_data = status["result"]
+                            composite = (eval_data["summary"]["avg_context_precision"] + eval_data["summary"]["avg_context_recall"] + (eval_data["summary"]["avg_correctness"]/5.0)) / 3.0
+                            st.success(f"Composite Score: {composite:.2f}")
+                            with st.expander("View Full Metrics"):
+                                st.json(eval_data)
+                        else:
+                            st.error(f"Evaluation failed: {status.get('error')}")
+                        break
+                time.sleep(1.5)
                     
     st.divider()
 

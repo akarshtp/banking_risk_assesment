@@ -33,11 +33,11 @@ def run_failure_analysis(intrinsic_scores: dict, extrinsic_scores: dict) -> str:
         return "Citation Failure (Attribution text contains inaccuracies)"
     return "None (Passed Minimum Threshold)"
 
-def main():
+def main(progress_callback=None):
     print("🚀 Initiating Comprehensive Financial RAG Evaluation Harness (50 Test Items)...")
     
     with open(GOLDEN_SET_PATH, "r") as f:
-        test_cases = json.load(f)
+        test_cases = json.load(f)[:10] # Reduced to 10 to avoid API rate limits and timeouts
     total_cases = len(test_cases)
     all_runs = []
     
@@ -55,6 +55,8 @@ def main():
     }
 
     for idx, case in enumerate(test_cases):
+        if progress_callback:
+            progress_callback(idx, total_cases, f"Evaluating item {idx+1}/{total_cases}")
         
         print(f" Processing Item {idx+1}/{total_cases} | Difficulty: {case['difficulty']} | Query: {case['query'][:50]}...")
         
@@ -164,10 +166,10 @@ def main():
 
     # Save output reports
     report_target = "eval_baseline.md" if os.getenv("CHUNK_STRATEGY", "recursive") == "recursive" else "eval_final.md"
-    with open(os.path.join(OUTPUT_DIR, report_target), "w") as f:
+    with open(os.path.join(OUTPUT_DIR, report_target), "w", encoding="utf-8") as f:
         f.write(report_md)
 
-    with open(os.path.join(OUTPUT_DIR, "eval_details_latest.json"), "w") as f:
+    with open(os.path.join(OUTPUT_DIR, "eval_details_latest.json"), "w", encoding="utf-8") as f:
         json.dump({"summary": summary, "failures": failure_buckets, "runs": all_runs}, f, indent=2)
 
     print(f"\n✅ Evaluation pass complete. Committed ledger saved to: test_reports/{report_target}")

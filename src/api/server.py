@@ -171,30 +171,48 @@ async def pure_retrieval(request: RetrievalRequest):
 
 
 
-@app.post("/evaluate")
-async def evaluate_rag():
-    """Runs the 50-item standalone evaluation suite and returns updated metrics."""
-    try:
-        from eval.run_eval import main as run_harness
-        import json
-        
-        # Execute the standalone test suite
-        run_harness()
-        
-        # Read the generated summary to return a direct JSON response
-        results_path = os.path.join(DATA_DIR, "..", "test_reports", "eval_details_latest.json")
-        with open(results_path, "r") as f:
-            eval_data = json.load(f)
+EVAL_JOBS = {}
+
+@app.post("/evaluate/start")
+async def start_evaluate(background_tasks: BackgroundTasks):
+    """Starts the standalone evaluation suite in the background."""
+    job_id = str(uuid.uuid4())
+    EVAL_JOBS[job_id] = {"state": "running", "progress": 0.0, "message": "Starting evaluation...", "result": None, "error": None}
+    
+    def run_eval_job():
+        try:
+            from eval.run_eval import main as run_harness
+            import json
             
-        return {
-            "status": "success",
-            "end_to_end_quality": (eval_data["summary"]["avg_context_precision"] + eval_data["summary"]["avg_context_recall"] + (eval_data["summary"]["avg_correctness"]/5.0)) / 3.0,
-            "metrics": eval_data["summary"],
-            "failures": eval_data["failures"]
-        }
-    except Exception as e:
-        app_logger.error(f"Evaluation runner endpoint encountered an error: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+            def update_progress(current, total, msg):
+                EVAL_JOBS[job_id]["progress"] = current / total
+                EVAL_JOBS[job_id]["message"] = msg
+                
+            run_harness(progress_callback=update_progress)
+            
+            results_path = os.path.join(DATA_DIR, "..", "test_reports", "eval_details_latest.json")
+            with open(results_path, "r") as f:
+                eval_data = json.load(f)
+                
+            EVAL_JOBS[job_id]["state"] = "completed"
+            EVAL_JOBS[job_id]["result"] = eval_data
+            EVAL_JOBS[job_id]["progress"] = 1.0
+            EVAL_JOBS[job_id]["message"] = "Evaluation complete."
+        except Exception as e:
+            app_logger.error(f"Evaluation runner encountered an error: {e}")
+            EVAL_JOBS[job_id]["state"] = "failed"
+            EVAL_JOBS[job_id]["error"] = str(e)
+            EVAL_JOBS[job_id]["message"] = "Failed."
+            
+    background_tasks.add_task(run_eval_job)
+    return {"job_id": job_id}
+
+@app.get("/evaluate/status/{job_id}")
+async def eval_status(job_id: str):
+    """Poll the status of an evaluation job."""
+    if job_id not in EVAL_JOBS:
+        raise HTTPException(status_code=404, detail="Job ID not found")
+    return EVAL_JOBS[job_id]
 
 
 @app.get("/sources", response_model=SourceListResponse)

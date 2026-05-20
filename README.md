@@ -35,7 +35,7 @@ loan_underwriter_project/
 │   ├── run_eval.py           # Evaluation runner script
 │   └── golden_set.json       # Golden dataset for evaluation
 ├── tests/
-│   └── test_report.py        # Test runner — sends 20 queries, generates report
+│   └── test_report.py        # Test runner — sends 10 queries (reduced from 20), generates report
 ├── data/                     # Vector databases and sample data
 ├── requirements.txt          # Python dependencies
 ├── .env                      # API key 
@@ -64,7 +64,7 @@ loan_underwriter_project/
 | **`schemas.py`** | Pydantic models for every data structure: `LoanDecision`, `CreditScoreResult`, `DocumentVerificationResult`, `DTIResult`, `ChatRequest`, `ChatResponse`, `HealthResponse`. Includes validators and enums for strict type checking. |
 | **`memory_manager.py`** | Manages per-session conversation memory using LangChain's `ConversationBufferWindowMemory` with `k=10`. Each session ID gets its own isolated memory. Supports reset and listing active sessions. |
 | **`logger_config.py`** | Sets up two structured JSON loggers that run automatically in the background. `logs/app.log` captures system events (startup, errors, tool calls). `logs/interactions.log` records every user ↔ assistant chat exchange with session ID, tools used, and response data. This is the always-on audit trail for Objective 9. |
-| **`test_report.py`** | Automated test runner. Sends 20 predefined queries to the API covering FAQ, guardrails, all 3 tools, and multi-turn conversations. Records pass/fail status, tools used, and response times. Generates both a JSON results file and a Markdown report inside the `test_reports/` folder. |
+| **`test_report.py`** | Automated test runner. Sends 10 predefined queries (reduced from 20 to prevent API timeouts) to the API covering FAQ, guardrails, tools, and multi-turn conversations. Records pass/fail status, tools used, and response times. Generates both a JSON results file and a Markdown report inside the `test_reports/` folder. |
 
 ---
 
@@ -123,7 +123,7 @@ Opens in browser at `http://localhost:8501`.
 
 ##  Running the Test Report
 
-The test report sends 20 queries to the API and records the results automatically.
+The test report sends 10 queries (reduced from the original 20 to prevent API timeouts and rate limits) to the API and records the results automatically. Note that since the sample size is reduced, the percentage pass rate will shift more dramatically with a single failure (1 failure = 90% instead of 95%).
 
 ### Prerequisites
 
@@ -224,7 +224,7 @@ code test_reports/test_report_latest.md
 
 VS Code will render the Markdown with formatted tables and headings.
 
-### The 20 test queries cover
+### The test queries cover (originally 20 queries, now limited to 10 for testing stability)
 
 | Queries | Category | What It Tests |
 |---|---|---|

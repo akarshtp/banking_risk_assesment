@@ -37,12 +37,22 @@ def get_query_hash(query: str) -> str:
 def generate_multi_queries(original_query: str) -> List[str]:
     """Uses the LLM to generate 2 alternative phrasings of the query for better recall."""
     try:
-        llm = ChatAnthropic(
-            model=os.getenv("ANTHROPIC_MODEL", "claude-3-sonnet-20240229"),
-            api_key=os.getenv("ANTHROPIC_API_KEY"),
-            max_tokens=100,
-            temperature=0.2
-        )
+        provider = os.getenv("PRIMARY_PROVIDER", "anthropic").lower()
+        if provider == "openai":
+            from langchain_openai import ChatOpenAI
+            llm = ChatOpenAI(
+                model=os.getenv("OPENAI_MODEL", "gpt-4o-mini"),
+                api_key=os.getenv("OPENAI_API_KEY"),
+                max_tokens=100,
+                temperature=0.2
+            )
+        else:
+            llm = ChatAnthropic(
+                model=os.getenv("ANTHROPIC_MODEL", "claude-3-sonnet-20240229"),
+                api_key=os.getenv("ANTHROPIC_API_KEY"),
+                max_tokens=100,
+                temperature=0.2
+            )
         
         prompt = ChatPromptTemplate.from_messages([
             ("system", "You are an AI assistant. Your task is to generate 2 different alternative phrasings of the user's query to help retrieve relevant documents from a vector database. Return ONLY a comma-separated list of the 2 new queries."),

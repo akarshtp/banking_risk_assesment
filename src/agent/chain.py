@@ -23,34 +23,45 @@ load_dotenv()
 
 # ─────────────────────────────────────────────────────────────────────────────
 # OBJECTIVE 1: LLM INITIALIZATION
-# Primary model: claude-sonnet for balance of speed + quality
-# Fallback model: claude-haiku for resilience (OBJECTIVE 8)
 # ─────────────────────────────────────────────────────────────────────────────
-# Model name — single source of truth
-MODEL_NAME = os.getenv("ANTHROPIC_MODEL", "claude-3-sonnet-20240229")
-
+PRIMARY_PROVIDER = os.getenv("PRIMARY_PROVIDER", "anthropic").lower()
 
 def get_primary_llm():
-    """Initialize the primary Claude model."""
-    return ChatAnthropic(
-        model=MODEL_NAME,
-        api_key=os.getenv("ANTHROPIC_API_KEY"),
-        max_tokens=2048,
-        temperature=0.1,  # Low temperature for consistent underwriting decisions
-    )
-
+    """Initialize the primary model based on provider preference."""
+    if PRIMARY_PROVIDER == "openai":
+        return ChatOpenAI(
+            model=os.getenv("OPENAI_MODEL", "gpt-4o"),
+            api_key=os.getenv("OPENAI_API_KEY"),
+            max_tokens=2048,
+            temperature=0.1,
+        )
+    else:
+        return ChatAnthropic(
+            model=os.getenv("ANTHROPIC_MODEL", "claude-3-sonnet-20240229"),
+            api_key=os.getenv("ANTHROPIC_API_KEY"),
+            max_tokens=2048,
+            temperature=0.1,
+        )
 
 def get_fallback_llm():
     """
-    OBJECTIVE 8: Fallback model — uses OpenAI for resilience 
-    if the primary Anthropic model fails.
+    Fallback model to ensure resilience.
+    Uses the opposite of the primary provider.
     """
-    return ChatOpenAI(
-        model=os.getenv("OPENAI_MODEL", "gpt-4o-mini"), # You can change this to gpt-4o or gpt-3.5-turbo
-        api_key=os.getenv("OPENAI_API_KEY"),
-        max_tokens=1500,
-        temperature=0.1,
-    )
+    if PRIMARY_PROVIDER == "openai":
+        return ChatAnthropic(
+            model=os.getenv("ANTHROPIC_MODEL", "claude-3-haiku-20240307"),
+            api_key=os.getenv("ANTHROPIC_API_KEY"),
+            max_tokens=1500,
+            temperature=0.1,
+        )
+    else:
+        return ChatOpenAI(
+            model=os.getenv("OPENAI_MODEL", "gpt-4o-mini"),
+            api_key=os.getenv("OPENAI_API_KEY"),
+            max_tokens=1500,
+            temperature=0.1,
+        )
 
 # ─────────────────────────────────────────────────────────────────────────────
 # OBJECTIVE 4: Build few-shot example selector (done once at startup)
