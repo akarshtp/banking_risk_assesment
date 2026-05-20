@@ -108,7 +108,7 @@ You should see:
 
 ```
 INFO:     Uvicorn running on http://0.0.0.0:8000
-INFO:     🚀 Loan Underwriting API starting up...
+INFO:     Loan Underwriting API starting up...
 ```
 
 ### Step 6: Start the Streamlit frontend (new terminal)
@@ -144,40 +144,40 @@ python tests/test_report.py
 ### What you'll see in the terminal
 
 ```
-🏥 Checking API health...
+Checking API health...
    Status: healthy
    Model:  claude-sonnet-4-20250514
    Tools:  ['credit_score_analyzer', 'document_verification_engine', 'dti_calculator']
 
 ======================================================================
-🧪 LOAN UNDERWRITING ASSISTANT — TEST REPORT
+LOAN UNDERWRITING ASSISTANT — TEST REPORT
    Date: 2025-01-15 14:30:22
    API:  http://localhost:8000
    Total Queries: 20
 ======================================================================
 
 ──────────────────────────────────────────────────
-📂 Category: FAQ
+Category: FAQ
 ──────────────────────────────────────────────────
-  🔄 Query 1: What is a debt-to-income ratio and why does it matter for loans?...
-  ✅ PASS | Time: 3.21s | Tools: []
+  Query 1: What is a debt-to-income ratio and why does it matter for loans?...
+  PASS | Time: 3.21s | Tools: []
 
-  🔄 Query 2: What credit score is considered good for a home loan?...
-  ✅ PASS | Time: 2.89s | Tools: []
+  Query 2: What credit score is considered good for a home loan?...
+  PASS | Time: 2.89s | Tools: []
 
 ... (continues for all 20 queries) ...
 
 ======================================================================
-📊 FINAL RESULTS: 19/20 passed (95.0%)
+FINAL RESULTS: 19/20 passed (95.0%)
 ======================================================================
 
-📁 Saving reports to: test_reports/
-  💾 JSON saved: test_reports/test_results_20250115_143022.json
-  💾 JSON saved: test_reports/test_results_latest.json
-  📄 Markdown saved: test_reports/test_report_20250115_143022.md
-  📄 Markdown saved: test_reports/test_report_latest.md
+Saving reports to: test_reports/
+  JSON saved: test_reports/test_results_20250115_143022.json
+  JSON saved: test_reports/test_results_latest.json
+  Markdown saved: test_reports/test_report_20250115_143022.md
+  Markdown saved: test_reports/test_report_latest.md
 
-✅ All done!
+All done!
 ```
 
 ### Where to find the results
