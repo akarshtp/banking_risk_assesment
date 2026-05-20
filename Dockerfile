@@ -42,6 +42,7 @@ WORKDIR /app
 # Install runtime system dependencies (if any needed for FAISS/Chroma/OCR)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libgomp1 \
+    curl \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy virtual environment from builder
