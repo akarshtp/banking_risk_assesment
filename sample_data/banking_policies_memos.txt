@@ -1,0 +1,52 @@
+=============================================================================
+DOCUMENT 1: INTERNAL CREDIT POLICY MANUAL - RISK FRAMEWORK
+=============================================================================
+1.1 DEBT-TO-INCOME (DTI) STANDARDS
+The bank enforces a baseline rule regarding debt-to-income limits. The maximum recommended DTI for any standard individual application is capped strictly at 45%. Any expansion past this baseline creates immediate risk classification spikes.
+Exception Provision: The credit committee allows a conditional variance extending permissible DTI thresholds up to 50% exclusively for applicants identified within the Medium risk profile bucket, provided clear verification parameters (e.g., secondary guarantor, steady alternate asset backing) are successfully delivered. Any candidate displaying a debt footprint over 55% DTI is labeled an automatic Reject.
+
+1.2 COLLATERAL AND VALUE RATIOS
+For all secured products, the maximum allowed Loan-to-Value (LTV) ratio is capped at 80% for Tier-1 real estate holdings and 70% for alternate assets. Residential property appraisals must originate from a verified bank panel valuer. 
+
+1.3 CO-APPLICANT CONDITIONS
+A primary wage-earning co-applicant must be declared if the primary applicant's unadjusted credit assessment drops into the High-risk category. The financial history of the co-applicant will be parsed with identical scrutiny.
+
+=============================================================================
+DOCUMENT 2: REGULATORY GUIDE - RBI MASTER CIRCULAR ON LOANS & ADVANCES
+=============================================================================
+2.1 STATUTORY EXPOSURE BASICS
+Per Central Bank directives, a bank’s aggregate exposure framework to a single counterparty entity must never exceed 15% of the total capital funds available within the banking institution. Tier-1 capital reserves govern this validation threshold.
+
+2.2 IDENTIFICATION OF NON-COOPERATIVE BORROWERS
+A borrower is officially designated as "Non-Cooperative" if they possess the clear financial capacity to settle recorded debt constraints but intentionally withhold payments, misapply disbursed fund parameters, or neglect to provide mandatory corporate transparency records.
+
+2.3 PROVISIONING HIGHLIGHTS FOR DEFAULTS
+Assets classified as Non-Performing Assets (NPAs) demand immediate, systematic regulatory ledger adjustments:
+- Sub-Standard Assets (Defaulting <= 12 months): Require a base uniform provision allocation of 15%.
+- Doubtful Assets (Defaulting > 12 months): Require provision asset brackets scaling rapidly from 25% up to 100% based on exact validation durations of unsecured exposure metrics.
+
+=============================================================================
+DOCUMENT 3: COMPLIANCE CODE - FAIR PRACTICES LENDING FRAMEWORK
+=============================================================================
+3.1 TRANSPARENCY PRINCIPLES IN RATE MANAGEMENT
+The institution must provide a clean Interest Rate Disclosures matrix to every applicant. Loan sanction agreements must explicitly itemize structural component items including the processing fee, floating index rules, reset periods, and prepayment penalties.
+
+3.2 NON-DISCRIMINATORY SELECTION NORMS
+Lending evaluations must follow strict objective criteria. Applications cannot be handled differently based on demographic criteria or regional background parameters. Decisions must rest entirely upon risk-score parameters, asset validation, and document clearance metrics.
+
+3.3 GRIEVANCE REDRESSAL PROTOCOLS
+Applicants have a regulatory right to dispute risk decisions. If a customer files a complaint regarding service delivery or evaluation bias, the Grievance Redressal Officer must respond with a formal resolution layout within a maximum structural period of 21 calendar days.
+
+=============================================================================
+DOCUMENT 4: ANONYMISED UNDERWRITING DISPOSITION MEMOS (10 DISPOSITIONS)
+=============================================================================
+[MEMO 01 - APPROVED] Applicant: Jonathan Vance. Monthly Earnings: $14,000. Aggregated Outstandings: $4,200. Computed DTI: 30%. Verified Risk Class: Low Risk. Notes: Clean CIBIL profile. Cleared for prime corporate program.
+[MEMO 02 - DENIED] Applicant: Sarah Jenkins. Monthly Earnings: $3,500. Aggregated Outstandings: $2,100. Computed DTI: 60%. Verified Risk Class: Reject. Notes: Exceeds maximum unadjusted policy caps. DTI ratio is too high for any standard product.
+[MEMO 03 - MANUAL REVIEW] Applicant: Marcus Brody. Monthly Earnings: $9,000. Aggregated Outstandings: $4,230. Computed DTI: 47%. Verified Risk Class: Medium Risk. Notes: Exceeds basic 45% policy baseline; pending secondary collateral review for conditional approval variance.
+[MEMO 04 - APPROVED] Applicant: Elena Rostova. Monthly Earnings: $22,000. Aggregated Outstandings: $3,300. Computed DTI: 15%. Verified Risk Class: Low Risk. Notes: Elite tier applicant. Pre-approved for maximum asset purchase flexibility.
+[MEMO 05 - DENIED] Applicant: David Miller. Monthly Earnings: $5,000. Aggregated Outstandings: $2,800. Computed DTI: 56%. Verified Risk Class: High Risk. Notes: Exceeds conditional variance cap of 50%. Deemed ineligible for standard unsecured program.
+[MEMO 06 - APPROVED] Applicant: Priya Nair. Monthly Earnings: $11,500. Aggregated Outstandings: $3,105. Computed DTI: 27%. Verified Risk Class: Low Risk. Notes: Verified PAN and Aadhaar records match parameters perfectly. Zero past repayment variance.
+[MEMO 07 - MANUAL REVIEW] Applicant: Carlos Mendez. Monthly Earnings: $8,000. Aggregated Outstandings: $3,920. Computed DTI: 49%. Verified Risk Class: Medium Risk. Notes: DTI inside conditional threshold window; sent to manual queue for guarantor documentation parsing.
+[MEMO 08 - DENIED] Applicant: Linda Green. Monthly Earnings: $4,200. Aggregated Outstandings: $2,730. Computed DTI: 65%. Verified Risk Class: Reject. Notes: Severe utilization trends on primary cards. Automatic drop into rejection bucket.
+[MEMO 09 - APPROVED] Applicant: Thomas Wright. Monthly Earnings: $16,500. Aggregated Outstandings: $4,125. Computed DTI: 25%. Verified Risk Class: Low Risk. Notes: Clean income verification matching latest ITR submissions. 
+[MEMO 10 - APPROVED] Applicant: Alistair Cook. Monthly Earnings: $12,000. Aggregated Outstandings: $2,400. Computed DTI: 20%. Verified Risk Class: Low Risk. Notes: Strong baseline liquidity profiles. Sanctioned at baseline market parameters.

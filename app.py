@@ -131,7 +131,21 @@ with st.sidebar:
 
     st.divider()
 
-
+    # --- WEEK 3: EVALUATION UI ---
+    st.markdown("### 🧪 RAG Evaluation")
+    st.caption("Run the LLM-as-a-judge evaluation suite against the golden dataset.")
+    
+    if st.button("Run Evaluation", use_container_width=True):
+        with st.spinner("Evaluating retrieval & generation..."):
+            eval_result = call_evaluate_api()
+            if "error" in eval_result:
+                st.error(f"Evaluation failed: {eval_result['error']}")
+            else:
+                st.success(f"Composite Score: {eval_result.get('end_to_end_quality', 0):.2f}")
+                with st.expander("View Full Metrics"):
+                    st.json(eval_result)
+                    
+    st.divider()
 
     st.markdown("### Backend Status")
     health = call_health_api()

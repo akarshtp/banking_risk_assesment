@@ -38,3 +38,6 @@ markdown>=3.5.2
 # --- Evaluation Harness (Week 3) ---
 ragas>=0.1.4
 datasets>=2.18.0
+
+langchain-cohere 
+langchain-experimental

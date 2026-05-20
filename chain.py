@@ -16,7 +16,7 @@ from schemas import LoanDecision, Citation
 from logger_config import app_logger, log_interaction
 
 from langchain_anthropic import ChatAnthropic
-from langchain_openai import ChatOpenAI  # Add this line
+from langchain_openai import ChatOpenAI
 
 load_dotenv()
 
@@ -70,16 +70,11 @@ except Exception as e:
 def check_guardrail(user_text: str) -> bool:
     """
     Quick check to ensure the query is banking/loan related.
+    Includes fallback logic if the primary model fails.
     
     Returns:
         True if the query is safe (on-topic), False if off-topic.
     """
-    guardrail_llm = ChatAnthropic(
-        model=MODEL_NAME,
-        api_key=os.getenv("ANTHROPIC_API_KEY"),
-        max_tokens=10,
-        temperature=0.0,
-    )
     guardrail_prompt = ChatPromptTemplate.from_messages([
         ("system",
          "You are a banking safety filter. If the user query is NOT about banking, "
@@ -90,15 +85,27 @@ def check_guardrail(user_text: str) -> bool:
         ("human", "{input}"),
     ])
 
-    # OBJECTIVE 1: Clean chain composition using | pipe operator
-    guardrail_chain = guardrail_prompt | guardrail_llm
-
     try:
+        # 1. Try Primary LLM (Anthropic)
+        primary_llm = get_primary_llm()
+        guardrail_chain = guardrail_prompt | primary_llm
         result = guardrail_chain.invoke({"input": user_text})
         return "OFF_TOPIC" not in result.content.upper()
-    except Exception as e:
-        app_logger.error(f"Guardrail check failed: {e}")
-        return True  # Fail open — let the main agent handle it
+        
+    except Exception as primary_e:
+        app_logger.warning(f"Guardrail primary LLM failed: {primary_e}. Trying fallback...")
+        
+        try:
+            # 2. Try Fallback LLM (OpenAI) if Anthropic fails
+            fallback_llm = get_fallback_llm()
+            guardrail_chain = guardrail_prompt | fallback_llm
+            result = guardrail_chain.invoke({"input": user_text})
+            return "OFF_TOPIC" not in result.content.upper()
+            
+        except Exception as fallback_e:
+            app_logger.error(f"Guardrail fallback also failed: {fallback_e}")
+            # Fail open ONLY if both models are completely down
+            return True 
 
 
 # ─────────────────────────────────────────────────────────────────────────────

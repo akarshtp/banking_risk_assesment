@@ -113,6 +113,10 @@ def retrieve_documents(query: str, top_k: int = 5, session_id: str = None) -> Li
         
         # Filter and map top_k
         for doc, score in doc_scores[:top_k]:
+            # NEW: Ignore completely irrelevant documents (negative logits)
+            if score < -5.0:
+                continue
+                
             results.append({
                 "content": doc.page_content,
                 "metadata": doc.metadata,

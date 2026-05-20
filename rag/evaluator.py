@@ -1,23 +1,12 @@
 import os
+import json
+import re # <-- Add this import
 from typing import List, Dict, Any
-from datasets import Dataset
-from ragas import evaluate
-from ragas.metrics import (
-    context_precision,
-    context_recall,
-    answer_relevancy,
-    faithfulness
-)
-
 from schemas import EvalResult
 from logger_config import app_logger
 from rag.retrieval import retrieve_documents
 from chain import get_primary_llm
 
-# =============================================================================
-# GOLDEN TEST SET
-# Add more domain-specific questions as your knowledge base grows
-# =============================================================================
 GOLDEN_DATASET = [
     {
         "question": "What is the maximum recommended DTI for a new loan?",
@@ -31,97 +20,95 @@ GOLDEN_DATASET = [
 
 def run_evaluation_suite(custom_test_set: List[Dict[str, str]] = None) -> EvalResult:
     """
-    Runs the Ragas evaluation suite against the RAG pipeline.
-    
-    Args:
-        custom_test_set: Optional list of dicts with 'question' and 'ground_truth'.
-                         Defaults to GOLDEN_DATASET.
+    Runs an LLM-as-a-Judge evaluation suite against the RAG pipeline.
     """
-    app_logger.info("Starting RAG Evaluation Suite...")
-
+    app_logger.info("Starting LLM-as-a-Judge Evaluation Suite...")
     test_set = custom_test_set if custom_test_set else GOLDEN_DATASET
     
-    questions = []
-    answers = []
-    contexts = []
-    ground_truths = []
-
-    # We need an LLM to generate the answers for evaluation
     llm = get_primary_llm()
+
+    total_precision = 0.0
+    total_recall = 0.0
+    total_relevance = 0.0
+    total_faithfulness = 0.0
+    results_details = []
 
     for item in test_set:
         query = item["question"]
-        questions.append(query)
-        ground_truths.append(item["ground_truth"])
+        ground_truth = item["ground_truth"]
 
-        # 1. Retrieve Contexts via our Week 3 Pipeline
+        # 1. Retrieve Contexts
         retrieved_docs = retrieve_documents(query, top_k=3)
         doc_contents = [doc["content"] for doc in retrieved_docs]
-        contexts.append(doc_contents)
+        context_str = "\n---\n".join(doc_contents) if doc_contents else "NO CONTEXT RETRIEVED."
 
         # 2. Generate Answer 
-        # For pure RAG evaluation, we use a direct QA prompt to isolate the retrieval quality
-        context_str = "\n---\n".join(doc_contents)
-        prompt = (
+        ans_prompt = (
             f"Answer the question based ONLY on the context provided.\n\n"
             f"Context:\n{context_str}\n\nQuestion: {query}\nAnswer:"
         )
-        
         try:
-            response = llm.invoke(prompt)
-            # Extract plain text whether response is string or message object
-            ans_text = response.content if hasattr(response, 'content') else str(response)
-            answers.append(ans_text)
+            response = llm.invoke(ans_prompt)
+            generated_answer = response.content if hasattr(response, 'content') else str(response)
         except Exception as e:
-            app_logger.error(f"Generation failed during eval for query '{query}': {e}")
-            answers.append("Error generating answer.")
+            app_logger.error(f"Generation failed: {e}")
+            generated_answer = "Error generating answer."
 
-    # Prepare dataset for Ragas HuggingFace format
-    eval_data = {
-        "question": questions,
-        "answer": answers,
-        "contexts": contexts,
-        "ground_truth": ground_truths
-    }
-    
-    dataset = Dataset.from_dict(eval_data)
+        # 3. LLM-as-a-Judge Evaluation Prompt
+        judge_prompt = f"""
+        You are an expert evaluator. Evaluate the following RAG system outputs on a scale of 0.0 to 1.0 for four metrics:
+        1. context_precision: Is the retrieved context relevant to the question?
+        2. context_recall: Does the context contain all info needed to match the ground truth?
+        3. answer_relevance: Does the generated answer directly address the question?
+        4. faithfulness: Is the generated answer fully supported by the retrieved context (no hallucinations)?
 
-    # Run Ragas Evaluation
-    app_logger.info("Running Ragas metrics (Note: Uses OpenAI as judge by default)...")
-    try:
-        result = evaluate(
-            dataset,
-            metrics=[
-                context_precision,
-                context_recall,
-                answer_relevancy,
-                faithfulness
-            ]
-        )
+        Output strictly as a JSON object with keys: "context_precision", "context_recall", "answer_relevance", "faithfulness". Do not include any other text.
+
+        Question: {query}
+        Ground Truth: {ground_truth}
+        Retrieved Context: {context_str}
+        Generated Answer: {generated_answer}
+        """
+
+        try:
+            eval_response = llm.invoke(judge_prompt)
+            eval_text = eval_response.content if hasattr(eval_response, 'content') else str(eval_response)
+            
+            # --- NEW ROBUST JSON EXTRACTION ---
+            # This regex finds the first '{' and the last '}' and extracts everything inside
+            match = re.search(r'\{.*\}', eval_text, re.DOTALL)
+            if match:
+                scores = json.loads(match.group(0))
+            else:
+                raise ValueError("No JSON object found in LLM response.")
+                
+        except Exception as e:
+            app_logger.error(f"Failed to parse LLM judge JSON: {e}")
+            # If it fails, we return zeros so the app doesn't crash
+            scores = {"context_precision": 0, "context_recall": 0, "answer_relevance": 0, "faithfulness": 0}
+
+        results_details.append({"query": query, "scores": scores})
         
-        # Convert Ragas result object to a dictionary
-        metrics_dict = {k: float(v) for k, v in result.items()}
-        
-        # Calculate composite end-to-end quality score (average of the 4 core metrics)
-        scores = [
-            metrics_dict.get('context_precision', 0),
-            metrics_dict.get('context_recall', 0),
-            metrics_dict.get('answer_relevancy', 0),
-            metrics_dict.get('faithfulness', 0)
-        ]
-        end_to_end = sum(scores) / len(scores) if scores else 0.0
+        total_precision += float(scores.get("context_precision", 0))
+        total_recall += float(scores.get("context_recall", 0))
+        total_relevance += float(scores.get("answer_relevance", 0))
+        total_faithfulness += float(scores.get("faithfulness", 0))
 
-        app_logger.info(f"Evaluation complete. Composite Score: {end_to_end:.2f}")
+    # Calculate Aggregates
+    n = len(test_set)
+    avg_precision = total_precision / n
+    avg_recall = total_recall / n
+    avg_relevance = total_relevance / n
+    avg_faithfulness = total_faithfulness / n
+    end_to_end = (avg_precision + avg_recall + avg_relevance + avg_faithfulness) / 4.0
 
-        return EvalResult(
-            context_precision=metrics_dict.get('context_precision', 0.0),
-            context_recall=metrics_dict.get('context_recall', 0.0),
-            answer_relevance=metrics_dict.get('answer_relevancy', 0.0),
-            faithfulness=metrics_dict.get('faithfulness', 0.0),
-            end_to_end_quality=end_to_end,
-            details={"raw_results": metrics_dict}
-        )
+    app_logger.info(f"Evaluation complete. Composite Score: {end_to_end:.2f}")
 
-    except Exception as e:
-        app_logger.error(f"Ragas evaluation failed: {e}")
-        raise RuntimeError(f"Evaluation suite failed: {e}")
+    return EvalResult(
+        context_precision=avg_precision,
+        context_recall=avg_recall,
+        answer_relevance=avg_relevance,
+        faithfulness=avg_faithfulness,
+        end_to_end_quality=end_to_end,
+        details={"raw_results": results_details}
+    )

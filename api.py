@@ -170,13 +170,30 @@ async def pure_retrieval(request: RetrievalRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.post("/evaluate", response_model=EvalResult)
+
+@app.post("/evaluate")
 async def evaluate_rag():
-    """Runs the Ragas evaluation suite against the vector store."""
+    """Runs the 50-item standalone evaluation suite and returns updated metrics."""
     try:
-        result = run_evaluation_suite()
-        return result
+        from eval.run_eval import main as run_harness
+        import json
+        
+        # Execute the standalone test suite
+        run_harness()
+        
+        # Read the generated summary to return a direct JSON response
+        results_path = os.path.join(DATA_DIR, "..", "reports", "eval_details_latest.json")
+        with open(results_path, "r") as f:
+            eval_data = json.load(f)
+            
+        return {
+            "status": "success",
+            "end_to_end_quality": (eval_data["summary"]["avg_context_precision"] + eval_data["summary"]["avg_context_recall"] + (eval_data["summary"]["avg_correctness"]/5.0)) / 3.0,
+            "metrics": eval_data["summary"],
+            "failures": eval_data["failures"]
+        }
     except Exception as e:
+        app_logger.error(f"Evaluation runner endpoint encountered an error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
