@@ -26,6 +26,8 @@ secrets.json
 .vscode/launch.json
 .vscode/extensions.json
 .history/
+AGENTS.md
+
 
 # === Vector Databases & Data Cache (If using RAG/FAISS/Chroma) ===
 *.db
@@ -49,3 +51,4 @@ Screenshots/
 test_reports/
 
 *.zip
+

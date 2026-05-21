@@ -89,7 +89,7 @@ def check_guardrail(user_text: str) -> bool:
     guardrail_prompt = ChatPromptTemplate.from_messages([
         ("system",
          "You are a banking safety filter. If the user query is NOT about banking, "
-         "loans, credit, finance, income, policies, or debt, reply ONLY 'OFF_TOPIC'. "
+         "loans, credit, finance, income, policies, debt, or document verification, reply ONLY 'OFF_TOPIC'. "
          "Otherwise reply ONLY 'SAFE'. "
          "General greetings (hi, hello, hey, good morning, thanks, etc.) and "
          "conversational pleasantries are SAFE — always allow them through."),

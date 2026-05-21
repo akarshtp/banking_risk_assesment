@@ -15,6 +15,7 @@ secrets.json
 .workspace
 .vscode/
 .history/
+AGENTS.md
 *.db
 *.sqlite
 data/
@@ -32,3 +33,4 @@ test_reports/
 *.zip
 .git/
 .github/
+*.md

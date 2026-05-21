@@ -24,8 +24,8 @@ COPY requirements.txt .
 
 # Install CPU-only torch to save space, then install other requirements
 RUN pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu && \
-    pip install -r requirements.txt
-
+    pip install -r requirements.txt && \
+    python -m spacy download en_core_web_lg
 # ==============================================================================
 # Stage 2: Runner
 # ==============================================================================

@@ -3,7 +3,7 @@ import logging
 import json
 from datetime import datetime, timezone
 from pythonjsonlogger import jsonlogger
-
+from src.core.pii_handler import pii_handler
 
 # ─────────────────────────────────────────────────────────────────────────────
 # LOG DIRECTORY SETUP
@@ -82,14 +82,25 @@ def log_interaction(
         structured_output: Parsed LoanDecision dict (if available).
         guardrail_triggered: Whether the guardrail blocked this query.
     """
+    #pii redaction for logs
+    safe_user_input = pii_handler.redact(user_input)
+    safe_agent_response = pii_handler.redact(agent_response[:500])  # Truncate and redact
+    
+    # If the structured output contains sensitive data, redact it also
+    safe_structured_output = None
+    if structured_output:
+        safe_structured_output = json.loads(
+            pii_handler.redact(json.dumps(structured_output))
+        )
+
     interaction_data = {
         "event": "chat_interaction",
         "session_id": session_id,
-        "user_input": user_input,
-        "agent_response": agent_response[:500],  # Truncate for log readability
+        "user_input": safe_user_input,
+        "agent_response": safe_agent_response,
         "tools_used": tools_used,
         "tools_count": len(tools_used),
-        "structured_output": structured_output,
+        "structured_output": safe_structured_output,
         "guardrail_triggered": guardrail_triggered,
         "response_length": len(agent_response),
     }
