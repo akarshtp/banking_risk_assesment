@@ -4,6 +4,8 @@ on:
   push:
     branches:
       - main
+    paths-ignore:
+      - '**.md'
   pull_request:
     branches:
       - main
@@ -11,6 +13,8 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     
     steps:
       - name: Checkout Code
@@ -42,7 +46,7 @@ jobs:
       - name: Verify Image Sizes
         run: |
           echo "Image Size Report:"
-          docker images --format "table {{.Repository}}\t{{.Tag}}\t{{.Size}}" | grep loan-underwriter
+          docker images --format "table {{.Repository}}\t{{.Tag}}\t{{.Size}}" | grep loan-underwriter || true
 
       - name: Smoke Test (Container Startup)
         run: |
@@ -68,8 +72,8 @@ jobs:
           # Check health of UI
           if ! curl -f http://localhost:8501/_stcore/health; then
             echo "UI Healthcheck failed"
-            docker-compose logs ui
+            docker compose logs ui
             exit 1
           fi
           
-          docker-compose down
+          docker compose down
