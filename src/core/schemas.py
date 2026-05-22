@@ -111,6 +111,7 @@ class EvalResult(BaseModel):
 class ChatRequest(BaseModel):
     session_id: str = Field(default="default", description="Session identifier for memory")
     message: str = Field(min_length=1, description="User message")
+    role_name: str = Field(default="junior_analyst", description="Simulated user role for RBAC")
 
 class ChatResponse(BaseModel):
     session_id: str

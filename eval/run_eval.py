@@ -11,10 +11,13 @@ from src.rag.retrieval import retrieve_documents
 from src.agent.chain import get_underwriter_response
 from eval.intrinsic import compute_hit_at_k, compute_mrr, compute_ndcg, compute_context_precision, compute_context_recall
 from eval.llm_judge import run_llm_judge
+from eval.custom_metrics import compute_compliance_score, compute_citation_precision
 
 GOLDEN_SET_PATH = os.path.join(os.path.dirname(__file__), "golden_set.json")
 OUTPUT_DIR = os.path.join(os.path.dirname(__file__), "..", "test_reports")
 os.makedirs(OUTPUT_DIR, exist_ok=True)
+
+import asyncio
 
 def run_failure_analysis(intrinsic_scores: dict, extrinsic_scores: dict) -> str:
     """
@@ -33,8 +36,8 @@ def run_failure_analysis(intrinsic_scores: dict, extrinsic_scores: dict) -> str:
         return "Citation Failure (Attribution text contains inaccuracies)"
     return "None (Passed Minimum Threshold)"
 
-def main(progress_callback=None):
-    print("🚀 Initiating Comprehensive Financial RAG Evaluation Harness (50 Test Items)...")
+async def main(progress_callback=None):
+    print("Initiating Comprehensive Financial RAG Evaluation Harness (50 Test Items)...")
     
     with open(GOLDEN_SET_PATH, "r") as f:
         test_cases = json.load(f)[:10] # Reduced to 10 to avoid API rate limits and timeouts
@@ -44,6 +47,7 @@ def main(progress_callback=None):
     # Aggregated Summary Tracking arrays
     total_hit, total_mrr, total_ndcg, total_c_prec, total_c_rec = 0, 0, 0, 0, 0
     total_corr, total_comp, total_cite, total_clar = 0, 0, 0, 0
+    total_compl, total_cite_prec = 0, 0
     
     failure_buckets = {
         "Retrieval Miss (Context missing from DB or top matches)": 0,
@@ -66,7 +70,7 @@ def main(progress_callback=None):
         context_string = "\n---\n".join(retrieved_texts)
 
         # 2. Evaluate Generation Pipeline
-        response_payload = get_underwriter_response(case["query"], session_id=f"eval-session-{idx}")
+        response_payload = await get_underwriter_response(case["query"], session_id=f"eval-session-{idx}")
         generated_answer = response_payload["response"]
 
         # 3. Calculate Intrinsic Retrieval Metrics
@@ -85,6 +89,10 @@ def main(progress_callback=None):
             context=context_string,
             generated_answer=generated_answer
         )
+        
+        # WEEK 4: Custom Metrics
+        ext_metrics["compliance"] = compute_compliance_score(generated_answer, case["expected_answer"])
+        ext_metrics["citation_precision"] = compute_citation_precision(generated_answer, retrieved_texts)
 
         # 5. Run Root-Cause Failure Analysis
         root_cause = run_failure_analysis(int_metrics, ext_metrics)
@@ -101,6 +109,8 @@ def main(progress_callback=None):
         total_comp += ext_metrics["completeness"]
         total_cite += ext_metrics["citation_quality"]
         total_clar += ext_metrics["clarity"]
+        total_compl += ext_metrics["compliance"]
+        total_cite_prec += ext_metrics["citation_precision"]
 
         all_runs.append({
             "id": case["id"],
@@ -123,7 +133,9 @@ def main(progress_callback=None):
         "avg_correctness": total_corr / total_cases,
         "avg_completeness": total_comp / total_cases,
         "avg_citation_quality": total_cite / total_cases,
-        "avg_clarity": total_clar / total_cases
+        "avg_clarity": total_clar / total_cases,
+        "avg_compliance": total_compl / total_cases,
+        "avg_citation_precision": total_cite_prec / total_cases
     }
 
     # Generate Markdown Report Content
@@ -172,7 +184,8 @@ def main(progress_callback=None):
     with open(os.path.join(OUTPUT_DIR, "eval_details_latest.json"), "w", encoding="utf-8") as f:
         json.dump({"summary": summary, "failures": failure_buckets, "runs": all_runs}, f, indent=2)
 
-    print(f"\n✅ Evaluation pass complete. Committed ledger saved to: test_reports/{report_target}")
+    print(f"\nEvaluation pass complete. Committed ledger saved to: test_reports/{report_target}")
+    return {"summary": summary, "failures": failure_buckets}
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())

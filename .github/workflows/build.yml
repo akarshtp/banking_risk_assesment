@@ -76,4 +76,7 @@ jobs:
             exit 1
           fi
           
+          echo "Running Regression Suite..."
+          docker compose exec -T api python -m eval.run_eval
+          
           docker compose down

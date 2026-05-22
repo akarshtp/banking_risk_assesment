@@ -22,6 +22,14 @@ from src.rag.ingestion import create_job, process_document_job, INGESTION_JOBS
 from src.rag.retrieval import retrieve_documents
 from src.rag.evaluator import run_evaluation_suite
 from src.rag.vector_store import get_vector_store
+from src.mcp.client import mcp_manager
+from src.hitl.store import HITLStore
+from src.prompt_manager.loader import prompt_manager
+from src.rbac.filter import rbac_manager
+from src.agents.dispatcher import agent_dispatcher
+from eval.run_eval import main as run_eval_main
+from eval.drift import drift_detector
+from pydantic import BaseModel
 
 from dotenv import load_dotenv
 load_dotenv()
@@ -66,9 +74,10 @@ async def chat_endpoint(request: ChatRequest):
     app_logger.info(f"[/chat] session={request.session_id} | message={request.message[:100]}")
 
     try:
-        result = get_underwriter_response(
+        result = await get_underwriter_response(
             user_text=request.message,
             session_id=request.session_id,
+            role_name=request.role_name
         )
 
         elapsed = time.time() - start_time
@@ -179,7 +188,7 @@ async def start_evaluate(background_tasks: BackgroundTasks):
     job_id = str(uuid.uuid4())
     EVAL_JOBS[job_id] = {"state": "running", "progress": 0.0, "message": "Starting evaluation...", "result": None, "error": None}
     
-    def run_eval_job():
+    async def run_eval_job():
         try:
             from eval.run_eval import main as run_harness
             import json
@@ -188,7 +197,8 @@ async def start_evaluate(background_tasks: BackgroundTasks):
                 EVAL_JOBS[job_id]["progress"] = current / total
                 EVAL_JOBS[job_id]["message"] = msg
                 
-            run_harness(progress_callback=update_progress)
+            # Await directly in the same event loop to prevent MCP session deadlocks
+            await run_harness(progress_callback=update_progress)
             
             results_path = os.path.join(DATA_DIR, "..", "test_reports", "eval_details_latest.json")
             with open(results_path, "r") as f:
@@ -227,6 +237,124 @@ async def list_sources():
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+
+# =============================================================================
+# WEEK 4 ENDPOINTS (MCP & HITL & RBAC)
+# =============================================================================
+
+@app.get("/mcp/tools")
+async def list_mcp_tools():
+    """List all registered MCP tool servers with their capabilities."""
+    try:
+        tools = await mcp_manager.get_langchain_tools()
+        return {"status": "success", "tools": [{"name": t.name, "description": t.description} for t in tools]}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+class MCPInvokeRequest(BaseModel):
+    server_name: str
+    tool_name: str
+    args: dict
+
+@app.post("/mcp/invoke")
+async def invoke_mcp_tool(request: MCPInvokeRequest):
+    """Invoke a specific MCP tool by name with provided parameters."""
+    try:
+        result = await mcp_manager.invoke_tool(request.server_name, request.tool_name, request.args)
+        return {"status": "success", "result": result}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/hitl/pending")
+async def list_pending_hitl_tasks():
+    """List all pending HITL approval requests."""
+    try:
+        tasks = HITLStore.get_pending_tasks()
+        return {"status": "success", "pending_tasks": tasks}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+class HITLReviewRequest(BaseModel):
+    decision: str
+    comments: str
+    reviewer: str = "admin"
+
+@app.post("/hitl/review/{task_id}")
+async def review_hitl_task(task_id: str, request: HITLReviewRequest):
+    """Approve or reject a pending HITL task."""
+    try:
+        if request.decision not in ["approve", "reject"]:
+            raise ValueError("Decision must be 'approve' or 'reject'")
+            
+        task = HITLStore.resolve_task(task_id, request.decision, request.comments, request.reviewer)
+        return {"status": "success", "task": task}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/prompts")
+async def list_prompts():
+    """List all prompt templates with their metadata."""
+    try:
+        prompts_meta = {}
+        for name, data in prompt_manager.templates.items():
+            prompts_meta[name] = {
+                "version": data.get("version"),
+                "author": data.get("author"),
+                "description": data.get("description")
+            }
+        return {"status": "success", "prompts": prompts_meta}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/roles")
+async def list_roles():
+    """List available roles and their document access permissions."""
+    try:
+        return {"status": "success", "roles": rbac_manager.roles}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/auth/context")
+async def get_auth_context(role: str = "junior_analyst"):
+    """Return the current user's role and accessible document types (Simulated)."""
+    try:
+        filter_dict = rbac_manager.get_role_filter(role)
+        return {"status": "success", "role": role, "active_filters": filter_dict}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/eval/regression")
+async def run_regression_suite():
+    """Run regression suite against the golden set."""
+    try:
+        results = await run_eval_main()
+        return {"status": "success", "metrics": results}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/agents/dispatch")
+async def dispatch_agents(request: ChatRequest):
+    """Dispatch query to specialized sub-agents."""
+    try:
+        results = await agent_dispatcher.dispatch(request.message, context={"session_id": request.session_id})
+        return {"status": "success", "results": results}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/eval/drift")
+async def evaluate_drift():
+    """Evaluate data drift for credit scores (Simulated)."""
+    try:
+        # Mocking data for demonstration
+        baseline = [650, 700, 720, 680, 710, 690, 750, 800, 620, 640]
+        # Updated 'recent' to be nearly identical to 'baseline' to simulate a healthy, non-drifting system
+        recent = [655, 700, 715, 680, 710, 695, 745, 800, 625, 640]
+        
+        results = drift_detector.analyze_credit_score_drift(baseline, recent)
+        return {"status": "success", "drift_analysis": results}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 if __name__ == "__main__":
     import uvicorn

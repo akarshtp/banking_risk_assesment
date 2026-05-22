@@ -10,6 +10,7 @@ from langchain_core.output_parsers import CommaSeparatedListOutputParser
 from src.rag.config import EMBEDDING_MODEL
 from src.rag.vector_store import get_vector_store
 from src.core.logger_config import app_logger
+from src.rbac.filter import rbac_manager
 
 # =============================================================================
 # MODELS & RE-RANKER INITIALIZATION
@@ -73,10 +74,10 @@ def generate_multi_queries(original_query: str) -> List[str]:
 # =============================================================================
 # CORE RETRIEVAL PIPELINE
 # =============================================================================
-def retrieve_documents(query: str, top_k: int = 5, session_id: str = None) -> List[Dict[str, Any]]:
+def retrieve_documents(query: str, top_k: int = 5, session_id: str = None, role_name: str = "junior_analyst") -> List[Dict[str, Any]]:
     """
     Executes the full RAG retrieval pipeline:
-    Cache Check -> Multi-Query -> Vector Search -> Cross-Encoder Re-rank
+    Cache Check -> Multi-Query -> Vector Search (w/ RBAC filter) -> Cross-Encoder Re-rank
     """
     # 1. Check Cache
     if session_id:
@@ -95,9 +96,10 @@ def retrieve_documents(query: str, top_k: int = 5, session_id: str = None) -> Li
     
     # 3. Broad Dense Retrieval
     candidate_docs_map = {}
+    metadata_filter = rbac_manager.get_role_filter(role_name)
     # Fetch top_k * 2 candidates for EACH variation to give the re-ranker a large pool
     for q in search_queries:
-        docs = vector_store.similarity_search(q, k=top_k * 2)
+        docs = vector_store.similarity_search(q, k=top_k * 2, filter=metadata_filter if metadata_filter else None)
         for doc in docs:
             # Deduplicate by content to avoid scoring the same chunk twice
             candidate_docs_map[doc.page_content] = doc

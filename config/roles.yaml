@@ -1,0 +1,15 @@
+roles:
+  junior_analyst:
+    allowed_doc_types: ["policy", "guideline", "public"]
+    restricted_metadata: 
+      confidentiality: ["public", "internal"]
+  senior_underwriter:
+    allowed_doc_types: ["policy", "guideline", "public", "exception_matrix"]
+    restricted_metadata:
+      confidentiality: ["public", "internal", "restricted"]
+  credit_head:
+    allowed_doc_types: ["*"] # All allowed
+    restricted_metadata: {}
+  auditor:
+    allowed_doc_types: ["*"]
+    restricted_metadata: {}

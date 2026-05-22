@@ -47,3 +47,7 @@ langchain-experimental
 presidio-analyzer>=2.2.35
 presidio-anonymizer>=2.2.35
 spacy>=3.7.2
+
+# --- Week 4 (MCP & Orchestration) ---
+mcp>=1.0.0
+PyYAML>=6.0.1  

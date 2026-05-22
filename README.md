@@ -1,258 +1,203 @@
-#  Loan Underwriting Assistant
+# Loan Underwriting Assistant: Comprehensive Project Handover
 
-An AI-powered loan risk assessment chatbot built with **LangChain**, **Claude (Anthropic)**, **FastAPI**, and **Streamlit**.
+An enterprise-grade, AI-powered loan risk assessment system built with **LangChain**, **Claude (Anthropic)**, **FastAPI**, and **Streamlit**.
 
-The assistant analyzes loan applications using 3 specialized tools — credit scoring, document verification, and DTI calculation — and returns structured underwriting decisions.
+This application analyzes complex loan applications by combining traditional rule-based banking logic with advanced Agentic AI workflows. It is designed to be fully decoupled, auditable, and secure.
+
+> *[ SCREENSHOT PLACEHOLDER: Add an image of the main Streamlit Chat interface here ]*
 
 ---
 
-## Project Structure
+## 🚀 Core Underwriting Capabilities
 
-```
-loan_underwriter_project/
+At its foundation, the AI uses structured Pydantic models to assess risk across three primary financial pillars:
+
+1. **DTI (Debt-to-Income) Calculator:** Automatically computes front-end and back-end DTI ratios, determines maximum recommended loan amounts, and evaluates eligibility based on strict banking thresholds.
+2. **Document Verification Engine:** Validates the format and authenticity of PAN cards, Aadhaar cards, PaySlips, and ITRs. It flags discrepancies and generates confidence scores to prevent fraud.
+3. **Credit Score Analyzer:** Simulates a localized credit scoring model. It analyzes payment history, credit age, active loans, and defaults to assign applicants into actionable risk buckets (Low, Medium, High, Reject).
+
+> *[ SCREENSHOT PLACEHOLDER: Add an image of the AI generating a structured LoanDecision output in the chat here ]*
+
+---
+
+## 🧠 Advanced Agent Architecture
+
+The project utilizes a modern LangChain Expression Language (LCEL) architecture:
+
+*   **ToolCallingAgent & AgentExecutor:** The brain of the system automatically determines which tools to invoke. It features a robust 3-attempt exponential backoff retry mechanism to survive API rate limits.
+*   **Decoupled Prompt Management (`prompts.yaml`):** All system instructions and Guardrails are separated from the Python logic. A dedicated **Prompt Viewer Tab** allows administrators to inspect active prompts without touching the codebase.
+*   **Semantic Few-Shot Routing:** Using `SemanticSimilarityExampleSelector` and ChromaDB, the agent dynamically injects the 3 most relevant examples into its context window based on the user's specific query.
+*   **Windowed Memory:** Retains the last 10 conversation turns per session, allowing for deep, multi-turn interviews with applicants.
+
+> *[ SCREENSHOT PLACEHOLDER: Add an image of the Prompt Viewer Tab here ]*
+
+---
+
+## 🔐 Secure RAG & Role-Based Access Control (RBAC)
+
+The system is augmented with a powerful Retrieval-Augmented Generation (RAG) pipeline backed by vector databases (Pinecone/Chroma/FAISS). It ingests internal banking manuals and compliance guidelines.
+
+**Zero-Leakage RBAC:**
+To ensure data security, the RAG pipeline enforces strict metadata filtering. When a user selects their role in the sidebar (e.g., Junior Analyst, Senior Underwriter, Credit Head), the backend uses `get_role_filter()` to automatically restrict vector searches. For example, a Junior Analyst cannot retrieve `confidential` documents, guaranteeing zero data leakage.
+
+> *[ SCREENSHOT PLACEHOLDER: Add an image of the Sidebar showing the User Role dropdown and the colored 'Access Level' warning box here ]*
+
+---
+
+## 🔌 Model Context Protocol (MCP) Integration
+
+The project has completely decoupled its advanced data-fetching tools using Anthropic's **Model Context Protocol (MCP)**. Instead of hardcoding logic, the agent connects dynamically to four external FastMCP Python servers via standard I/O streams:
+
+1. **Property Valuation Server:** Mocks retrieving real estate pricing, commercial zoning laws, and environmental risk tiers (flood/seismic zones).
+2. **Regulatory Feed Server:** Mocks fetching the absolute latest central bank (RBI) updates, such as repo rate changes and LTV caps.
+3. **Credit Bureau Server:** An external mock API for fetching PAN histories.
+4. **Income Verification Server:** An external mock API for verifying employment data.
+
+> *[ SCREENSHOT PLACEHOLDER: Add an image of the 🔌 MCP Servers Tab showing the active connections here ]*
+
+---
+
+## ⏸️ Human-In-The-Loop (HITL) Workflows
+
+The AI is not autonomous when it comes to high-risk decisions. Using rules defined in `config/hitl_rules.yaml`, the system intercepts and pauses highly sensitive requests before execution. 
+
+For example, if an applicant requests a commercial loan exceeding ₹50,000,000, the Agent immediately halts and places the request into a **Pending Review** queue. A human underwriter must navigate to the **HITL Approvals Tab** to manually review the rationale, provide comments, and click "Approve" before the AI is allowed to finalize the decision.
+
+> *[ SCREENSHOT PLACEHOLDER: Add an image of the ✅ HITL Approvals Tab showing a pending task here ]*
+
+---
+
+## 📊 Comprehensive Evaluation & Data Drift Harness
+
+To guarantee the reliability of the AI, the project features a rigorous, automated testing suite built directly into the UI's **Eval Dashboard**.
+
+**1. LLM-as-a-Judge Evaluation:**
+The system evaluates a Golden Dataset of complex banking queries. For each query, it runs the pipeline and then spins up a *second* AI to act as a judge, generating a detailed scorecard:
+*   **Intrinsic Retrieval:** Hit@3, MRR (Mean Reciprocal Rank), Context Precision, Context Recall.
+*   **Extrinsic Generation:** Factual Correctness (1-5), Completeness (1-5), Citation Quality (detecting hallucinations), and Compliance with banking policies.
+
+**2. Data Drift Detection:**
+The backend utilizes KL-Divergence mathematics to compare incoming application credit profiles against historical baselines, alerting administrators if the system begins experiencing statistical data drift.
+
+> *[ SCREENSHOT PLACEHOLDER: Add an image of the 📊 Eval Dashboard showing the Detailed Metrics grid and Composite Score here ]*
+
+---
+
+## 📂 Complete Project Structure
+
+```text
+Akarsh_T_P_Banking_Risk_Assessment/
 ├── src/
 │   ├── api/
-│   │   └── server.py         # FastAPI backend server (/chat, /reset, /health)
+│   │   └── server.py             # FastAPI backend orchestrator & endpoints
 │   ├── frontend/
-│   │   └── app.py            # Streamlit chat frontend (calls the API)
+│   │   └── app.py                # Streamlit UI (Chat, HITL, Prompts, Eval, MCP tabs)
 │   ├── agent/
-│   │   ├── chain.py          # Core LangChain agent 
-│   │   ├── tools.py          # 4 custom tools (Credit Score, Doc Verify, DTI, Retrieval)
-│   │   ├── prompts.py        # Few-shot prompt templates with semantic selection
-│   │   └── memory_manager.py # Multi-turn conversation memory (10 turns)
+│   │   ├── chain.py              # LCEL AgentExecutor with retry & fallback logic
+│   │   ├── tools.py              # Native LangChain tools (DTI, Doc Verify)
+│   │   ├── prompts.py            # Few-shot example semantic selector
+│   │   └── memory_manager.py     # Session-based conversational memory
 │   ├── core/
-│   │   ├── schemas.py        # Pydantic models for all inputs and outputs
-│   │   └── logger_config.py  # Structured JSON logging setup
-│   └── rag/
-│       ├── config.py         # RAG configuration
-│       ├── ingestion.py      # Document ingestion pipeline
-│       ├── retrieval.py      # Document retrieval pipeline
-│       ├── vector_store.py   # Vector DB initialization
-│       └── evaluator.py      # Evaluation suite logic
+│   │   ├── schemas.py            # Pydantic schemas (LoanDecision, EvalResult, etc.)
+│   │   └── logger_config.py      # Structured JSON application logging
+│   ├── mcp/
+│   │   ├── client.py             # MCP Client that wraps FastMCP servers
+│   │   ├── registry.py           # YAML loader for MCP tool servers
+│   │   └── servers/              # External FastMCP python servers
+│   │       ├── credit_bureau_server.py
+│   │       ├── income_verification_server.py
+│   │       ├── property_valuation_server.py
+│   │       └── regulatory_feed_server.py
+│   ├── hitl/
+│   │   ├── manager.py            # Intercepts prompts against YAML HITL rules
+│   │   └── store.py              # Local JSON store for pending HITL tasks
+│   ├── prompt_manager/
+│   │   └── loader.py             # Loads decoupled prompt templates from YAML
+│   ├── rbac/
+│   │   └── filter.py             # Generates vector DB metadata filters based on role
+│   ├── rag/
+│   │   ├── ingestion.py          # Document vectorization
+│   │   └── retrieval.py          # Vector similarity search
+│   └── agents/
+│       └── dispatcher.py         # Multi-agent dispatching logic
+├── config/
+│   ├── hitl_rules.yaml           # Triggers for Human-in-the-loop review
+│   ├── mcp_servers.yaml          # Registry of active MCP servers
+│   ├── prompts.yaml              # Decoupled agent system prompts
+│   └── roles.yaml                # RBAC permission tiers
 ├── eval/
-│   ├── intrinsic.py          # Intrinsic RAG metrics
-│   ├── llm_judge.py          # LLM as a Judge logic
-│   ├── run_eval.py           # Evaluation runner script
-│   └── golden_set.json       # Golden dataset for evaluation
+│   ├── custom_metrics.py         # Citation and Compliance tracking metrics
+│   ├── drift.py                  # KL-Divergence data drift monitoring
+│   ├── intrinsic.py              # Ragas-style intrinsic retrieval metrics
+│   ├── llm_judge.py              # Independent Extrinsic evaluator logic
+│   ├── run_eval.py               # The main automated Evaluation Harness
+│   └── golden_set.json           # Ground-truth test queries
 ├── tests/
-│   └── test_report.py        # Test runner — sends 10 queries (reduced from 20), generates report
-├── data/                     # Vector databases and sample data
-├── requirements.txt          # Python dependencies
-├── .env                      # API key 
-├── README.md             
-├── logs/                     # Auto-created at runtime
-│   ├── app.log               # System events log (JSON)
-│   └── interactions.log      # All chat interactions log (JSON)
-└── test_reports/             # Auto-created when tests run
-    ├── test_results_<timestamp>.json   # Timestamped raw results
-    ├── test_report_<timestamp>.md      # Timestamped readable report
-    ├── test_results_latest.json        # Most recent run (overwritten)
-    └── test_report_latest.md           # Most recent run (overwritten)
+│   ├── test_report.py            # Automated API integration test runner
+│   └── test_regex.py             # Regex extraction unit tests
+├── requirements.txt
+└── README.md
 ```
 
 ---
 
-##  What Each File Does
+## 🛠️ Setup & Run Instructions
 
-| File | Purpose |
-|---|---|
-| **`api.py`** | FastAPI server with 3 endpoints. `POST /chat` sends user messages to the agent. `POST /reset` clears session memory. `GET /health` returns system status. This is the backend that the frontend talks to. |
-| **`app.py`** | Streamlit chat UI. Shows message history, structured decision cards, tools used per response, and a sidebar with session controls, health status, and example queries. Communicates with `api.py` via HTTP. |
-| **`chain.py`** | The brain of the project. Runs the guardrail check (on-topic filter), builds the LangChain agent with tools and memory, handles retry logic (3 attempts with backoff), falls back to a lighter model on failure, and parses structured output. |
-| **`tools.py`** | Defines 3 LangChain tools: (1) **Credit Score Analyzer** — computes a simulated CIBIL/FICO score from 5 weighted factors and classifies into risk buckets. (2) **Document Verification Engine** — validates PAN, Aadhaar, PaySlip, ITR formats and flags mismatches. (3) **DTI Calculator** — computes debt-to-income ratio and maximum recommended loan amount. |
-| **`prompts.py`** | Contains 8 few-shot examples covering DTI, credit, document, and combined scenarios. Uses `SemanticSimilarityExampleSelector` with HuggingFace embeddings + Chroma to pick the 3 most relevant examples per query at runtime. Builds the full prompt template. |
-| **`schemas.py`** | Pydantic models for every data structure: `LoanDecision`, `CreditScoreResult`, `DocumentVerificationResult`, `DTIResult`, `ChatRequest`, `ChatResponse`, `HealthResponse`. Includes validators and enums for strict type checking. |
-| **`memory_manager.py`** | Manages per-session conversation memory using LangChain's `ConversationBufferWindowMemory` with `k=10`. Each session ID gets its own isolated memory. Supports reset and listing active sessions. |
-| **`logger_config.py`** | Sets up two structured JSON loggers that run automatically in the background. `logs/app.log` captures system events (startup, errors, tool calls). `logs/interactions.log` records every user ↔ assistant chat exchange with session ID, tools used, and response data. This is the always-on audit trail for Objective 9. |
-| **`test_report.py`** | Automated test runner. Sends 10 predefined queries (reduced from 20 to prevent API timeouts) to the API covering FAQ, guardrails, tools, and multi-turn conversations. Records pass/fail status, tools used, and response times. Generates both a JSON results file and a Markdown report inside the `test_reports/` folder. |
-
----
-
-##  Setup & Run
-
-
-
-### Step 1: Create a virtual environment (recommended)
+### Step 1: Environment Setup
 
 ```bash
+# Create a virtual environment
 python -m venv venv
 
-# On Mac/Linux
-source venv/bin/activate
-
-# On Windows
+# Activate on Windows
 venv\Scripts\activate
+
+# Activate on Mac/Linux
+source venv/bin/activate
 ```
 
-### Step 2: Install dependencies
+### Step 2: Install Dependencies
 
 ```bash
 pip install -r requirements.txt
 ```
 
-### Step 3: Add your API key
+### Step 3: API Keys
 
-Create a `.env` file in the project folder:
+Create a `.env` file in the root directory and add your API keys:
 
-```
+```env
 ANTHROPIC_API_KEY=your-anthropic-api-key-here
+OPENAI_API_KEY=your-openai-api-key-here
 ```
 
-### Step 5: Start the FastAPI backend
+### Step 4: Start the Backend Server
+
+The FastAPI backend automatically spins up the AI agent, evaluation suite, and connects dynamically to all four MCP servers.
 
 ```bash
+# Terminal 1
 uvicorn src.api.server:app --reload --port 8000
 ```
+> **Note:** Wait approximately 2 minutes for the HuggingFace embeddings and Vector databases to complete their "cold boot". The backend is fully ready when the terminal logs: `Application startup complete.`
 
-You should see:
-
-```
-INFO:     Uvicorn running on http://0.0.0.0:8000
-INFO:     Loan Underwriting API starting up...
-```
-
-### Step 6: Start the Streamlit frontend (new terminal)
-
-```bash
-streamlit run src/frontend/app.py
-```
-
-Opens in browser at `http://localhost:8501`.
-
----
-
-##  Running the Test Report
-
-The test report sends 10 queries (reduced from the original 20 to prevent API timeouts and rate limits) to the API and records the results automatically. Note that since the sample size is reduced, the percentage pass rate will shift more dramatically with a single failure (1 failure = 90% instead of 95%).
-
-### Prerequisites
-
-The FastAPI backend **must be running** before you run the tests:
-
-```bash
-# Terminal 1 — keep this running
-uvicorn src.api.server:app --reload --port 8000
-```
-
-### Run the tests
+### Step 5: Launch the Streamlit Dashboard
 
 ```bash
 # Terminal 2
-python tests/test_report.py
+streamlit run src/frontend/app.py
 ```
-
-### What you'll see in the terminal
-
-```
-Checking API health...
-   Status: healthy
-   Model:  claude-sonnet-4-20250514
-   Tools:  ['credit_score_analyzer', 'document_verification_engine', 'dti_calculator']
-
-======================================================================
-LOAN UNDERWRITING ASSISTANT — TEST REPORT
-   Date: 2025-01-15 14:30:22
-   API:  http://localhost:8000
-   Total Queries: 20
-======================================================================
-
-──────────────────────────────────────────────────
-Category: FAQ
-──────────────────────────────────────────────────
-  Query 1: What is a debt-to-income ratio and why does it matter for loans?...
-  PASS | Time: 3.21s | Tools: []
-
-  Query 2: What credit score is considered good for a home loan?...
-  PASS | Time: 2.89s | Tools: []
-
-... (continues for all 20 queries) ...
-
-======================================================================
-FINAL RESULTS: 19/20 passed (95.0%)
-======================================================================
-
-Saving reports to: test_reports/
-  JSON saved: test_reports/test_results_20250115_143022.json
-  JSON saved: test_reports/test_results_latest.json
-  Markdown saved: test_reports/test_report_20250115_143022.md
-  Markdown saved: test_reports/test_report_latest.md
-
-All done!
-```
-
-### Where to find the results
-
-After running, check the `test_reports/` folder:
-
-```
-test_reports/
-├── test_results_20250115_143022.json   ← Permanent record with timestamp
-├── test_report_20250115_143022.md      ← Permanent record with timestamp
-├── test_results_latest.json            ← Quick access (overwritten each run)
-└── test_report_latest.md              ← Quick access (overwritten each run)
-```
-
-### How to read the results
-
-**Option 1: Open the Markdown report** (recommended for reading)
-
-```bash
-# Open in any Markdown viewer, or just read it in terminal
-cat test_reports/test_report_latest.md
-```
-
-The Markdown report contains:
-- **Summary table** — total queries, pass/fail count, pass rate, average response time
-- **Category breakdown** — results grouped by FAQ, Guardrail, Credit Score, Document Verification, DTI Calculator, Multi-Turn
-- **Detailed results** — each query with expected behavior, actual response, tools used, and pass/fail status
-
-**Option 2: Open the JSON file** (for programmatic access)
-
-```bash
-cat test_reports/test_results_latest.json
-```
-
-The JSON file contains:
-- `report_metadata` — date, total queries, passed, failed, pass rate
-- `results` — array of 20 objects, each with query, response, tools_used, passed, failure_reason
-
-**Option 3: View in VS Code**
-
-```bash
-code test_reports/test_report_latest.md
-```
-
-VS Code will render the Markdown with formatted tables and headings.
-
-### The test queries cover (originally 20 queries, now limited to 10 for testing stability)
-
-| Queries | Category | What It Tests |
-|---|---|---|
-| 1–5 | FAQ | General banking questions answered without tools |
-| 6–8 | Guardrail | Off-topic queries (recipes, sports, coding) get blocked |
-| 9–11 | Credit Score Analyzer | Low, Medium, and High/Reject risk profiles |
-| 12–14 | Document Verification | Valid PAN, valid Aadhaar, invalid/forged documents |
-| 15–17 | DTI Calculator | Eligible, not eligible, and max loan computation |
-| 18–20 | Multi-Turn | 3 sequential messages in same session testing memory recall |
+> The User Interface will open automatically in your browser at `http://localhost:8501`.
 
 ---
 
+## 🧪 Running Automated Tests
 
+You can run the standalone automated test script to verify core banking logic and agent routing without using the UI.
 
----
-
-##  Objectives Covered
-
-| # | Objective | Where |
-|---|---|---|
-| 1 | LangChain-based architecture with clean chain composition | `chain.py` — agent + pipe operator chains |
-| 2 | Conversational memory (10+ turns) | `memory_manager.py` — `ConversationBufferWindowMemory(k=10)` |
-| 3 | 3 Custom tools | `tools.py` — Credit Score, Doc Verification, DTI Calculator |
-| 4 | Few-shot prompts with semantic example selection | `prompts.py` — `SemanticSimilarityExampleSelector` + Chroma |
-| 5 | Structured output parsing with Pydantic | `schemas.py` — validated models; `chain.py` — `parse_structured_output()` |
-| 6 | FastAPI backend (`/chat`, `/reset`, `/health`) | `api.py` |
-| 7 | Streamlit frontend with chat interface | `app.py` |
-| 8 | Error handling with retry logic and fallback chains | `chain.py` — `tenacity` retry + fallback LLM |
-| 9 | Structured JSON logging | `logger_config.py` — logs to `logs/app.log` and `logs/interactions.log` |
-
----
+1. Ensure the Backend (Terminal 1) is running.
+2. In a new terminal, execute:
+   ```bash
+   python tests/test_report.py
+   ```
+3. A detailed Markdown report summarizing the results, latency, and tool traces will be generated inside the `test_reports/` directory.

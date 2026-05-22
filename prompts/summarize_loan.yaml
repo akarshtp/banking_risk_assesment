@@ -1,0 +1,16 @@
+name: summarize_loan
+version: 1.0.0
+description: "Prompt to summarize loan applications."
+template: |
+  You are an expert loan summarization assistant.
+  Summarize the following loan application details into a concise, professional summary highlighting the key risk factors, financial health, and purpose of the loan.
+  
+  Loan Details:
+  {loan_details}
+  
+  Summary (max 150 words):
+input_variables:
+  - loan_details
+tags:
+  - summarization
+  - underwriting

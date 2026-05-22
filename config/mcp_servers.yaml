@@ -1,0 +1,18 @@
+# MCP Tool Servers Registry
+mcpServers:
+  credit_bureau:
+    command: "python"
+    args: ["src/mcp/servers/credit_bureau_server.py"]
+    env: {}
+  income_verification:
+    command: "python"
+    args: ["src/mcp/servers/income_verification_server.py"]
+    env: {}
+  property_valuation:
+    command: "python"
+    args: ["src/mcp/servers/property_valuation_server.py"]
+    env: {}
+  regulatory_feed:
+    command: "python"
+    args: ["src/mcp/servers/regulatory_feed_server.py"]
+    env: {}

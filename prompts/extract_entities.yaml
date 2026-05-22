@@ -1,0 +1,21 @@
+name: extract_entities
+version: 1.0.0
+description: "Prompt to extract financial entities from text."
+template: |
+  You are an expert financial entity extractor.
+  Given the following user query or text, extract all key financial entities such as:
+  - Loan Amount
+  - Monthly Income
+  - Existing Debt
+  - Credit Score
+  - Document Types (e.g., PAN, Aadhaar, Payslip)
+  
+  Text:
+  {text}
+  
+  Output ONLY a valid JSON object with the extracted entities as keys. If an entity is not found, leave its value as null.
+input_variables:
+  - text
+tags:
+  - extraction
+  - nlp

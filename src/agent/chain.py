@@ -78,6 +78,10 @@ except Exception as e:
 # ─────────────────────────────────────────────────────────────────────────────
 # GUARDRAIL CHAIN: Topic filter before main processing
 # ─────────────────────────────────────────────────────────────────────────────
+from src.core.schemas import LoanDecision
+from src.hitl.manager import hitl_manager
+from src.prompt_manager.loader import prompt_manager
+
 def check_guardrail(user_text: str) -> bool:
     """
     Quick check to ensure the query is banking/loan related.
@@ -86,15 +90,8 @@ def check_guardrail(user_text: str) -> bool:
     Returns:
         True if the query is safe (on-topic), False if off-topic.
     """
-    guardrail_prompt = ChatPromptTemplate.from_messages([
-        ("system",
-         "You are a banking safety filter. If the user query is NOT about banking, "
-         "loans, credit, finance, income, policies, debt, or document verification, reply ONLY 'OFF_TOPIC'. "
-         "Otherwise reply ONLY 'SAFE'. "
-         "General greetings (hi, hello, hey, good morning, thanks, etc.) and "
-         "conversational pleasantries are SAFE — always allow them through."),
-        ("human", "{input}"),
-    ])
+    # OBJECTIVE 8: LLM Guardrails (Fail-fast mechanism)
+    guardrail_prompt = prompt_manager.get_chat_prompt("guardrail_prompt", is_system=True)
 
     try:
         # 1. Try Primary LLM (Anthropic)
@@ -119,119 +116,28 @@ def check_guardrail(user_text: str) -> bool:
             return True 
 
 
-# ─────────────────────────────────────────────────────────────────────────────
-# OBJECTIVE 1: Custom Tool-Calling Agent
-# Uses ChatAnthropic.bind_tools() for native Claude tool calling.
-# ─────────────────────────────────────────────────────────────────────────────
-class ToolCallingAgent:
-    """
-    Custom tool-calling agent that uses Claude's native tool-calling support.
+from src.chains.base import build_lcel_agent_executor
+from src.chains.callbacks.logging import StructuredLoggingCallbackHandler
+from src.mcp.client import mcp_manager
 
-    OBJECTIVE 1: Clean chain composition
-    OBJECTIVE 3: Tools are bound to the agent via bind_tools()
-    OBJECTIVE 4: Few-shot prompt with semantic selection
-    """
-
-    def __init__(self, llm, tools, prompt, max_iterations=5, verbose=True):
-        self.llm = llm.bind_tools(tools)  # Bind tools to the LLM
-        self.tools = {t.name: t for t in tools}
-        self.prompt = prompt
-        self.max_iterations = max_iterations
-        self.verbose = verbose
-
-    @staticmethod
-    def _extract_text(content) -> str:
-        """
-        Extract plain text from Claude's response content.
-        """
-        if isinstance(content, str):
-            return content
-        if isinstance(content, list):
-            text_parts = []
-            for block in content:
-                if isinstance(block, dict) and block.get("type") == "text":
-                    text_parts.append(block["text"])
-                elif isinstance(block, str):
-                    text_parts.append(block)
-            return "\n".join(text_parts)
-        return str(content)
-
-    def invoke(self, input_data: dict) -> dict:
-        """
-        Run the agent loop: prompt -> LLM -> tool calls -> repeat until done.
-
-        Returns:
-            Dict with 'output' (str) and 'intermediate_steps' (list of tuples).
-        """
-        messages = self.prompt.format_messages(
-            input=input_data["input"],
-            chat_history=input_data.get("chat_history", []),
-            agent_scratchpad=[],
-        )
-
-        intermediate_steps = []
-
-        for iteration in range(self.max_iterations):
-            response = self.llm.invoke(messages)
-            messages.append(response)
-
-            if self.verbose:
-                app_logger.info(
-                    f"Agent iteration {iteration + 1}: "
-                    f"tool_calls={len(response.tool_calls) if response.tool_calls else 0}"
-                )
-
-            if not response.tool_calls:
-                return {
-                    "output": self._extract_text(response.content),
-                    "intermediate_steps": intermediate_steps,
-                }
-
-            for tool_call in response.tool_calls:
-                tool_name = tool_call["name"]
-                tool_args = tool_call["args"]
-
-                if self.verbose:
-                    app_logger.info(f"  Calling tool: {tool_name} with args: {tool_args}")
-
-                if tool_name in self.tools:
-                    try:
-                        tool_result = self.tools[tool_name].invoke(tool_args)
-                    except Exception as e:
-                        tool_result = f"Tool error: {str(e)}"
-                        app_logger.error(f"  Tool {tool_name} failed: {e}")
-                else:
-                    tool_result = f"Tool '{tool_name}' not found."
-
-                action = SimpleNamespace(tool=tool_name, tool_input=tool_args)
-                intermediate_steps.append((action, tool_result))
-
-                messages.append(ToolMessage(
-                    content=str(tool_result),
-                    tool_call_id=tool_call["id"],
-                ))
-
-        final_content = self._extract_text(
-            messages[-1].content if messages else "Max iterations reached."
-        )
-        return {
-            "output": final_content,
-            "intermediate_steps": intermediate_steps,
-        }
-
-
-def build_agent_executor(llm):
+async def build_agent_executor(llm):
     """
     Build a ToolCallingAgent with tools and few-shot prompt.
+    Now uses LCEL AgentExecutor and dynamically includes MCP tools.
     """
-    prompt = build_prompt(example_selector=example_selector)
+    prompt = prompt_manager.get_chat_prompt("system_prompt")
+    
+    # Get standard tools and dynamic MCP tools
+    mcp_tools = await mcp_manager.get_langchain_tools()
+    all_combined_tools = ALL_TOOLS + mcp_tools
+    
+    callbacks = [StructuredLoggingCallbackHandler()]
 
-    return ToolCallingAgent(
+    return build_lcel_agent_executor(
         llm=llm,
-        tools=ALL_TOOLS,
+        tools=all_combined_tools,
         prompt=prompt,
-        max_iterations=5,
-        verbose=True,
+        callbacks=callbacks
     )
 
 
@@ -244,12 +150,12 @@ def build_agent_executor(llm):
     retry=retry_if_exception_type((Exception,)),       # Retry on any exception
     reraise=True,
 )
-def invoke_agent_with_retry(executor: ToolCallingAgent, input_data: dict) -> dict:
+async def invoke_agent_with_retry(executor, input_data: dict) -> dict:
     """
     Invoke the agent with automatic retry on failure.
     """
     app_logger.info("Invoking agent (with retry logic)...")
-    return executor.invoke(input_data)
+    return await executor.ainvoke(input_data)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -282,7 +188,7 @@ def parse_structured_output(raw_response: str) -> LoanDecision | None:
 # MAIN ENTRY POINT: get_underwriter_response
 # Ties everything together: guardrail → agent → retry → fallback → parse
 # ─────────────────────────────────────────────────────────────────────────────
-def get_underwriter_response(user_text: str, session_id: str = "default") -> dict:
+async def get_underwriter_response(user_text: str, session_id: str = "default", role_name: str = "junior_analyst") -> dict:
     """
     Main function to process a user loan query.
     Orchestrates the pipeline and parses RAG citations (Week 3).
@@ -318,11 +224,24 @@ def get_underwriter_response(user_text: str, session_id: str = "default") -> dic
 
     try:
         primary_llm = get_primary_llm()
-        primary_executor = build_agent_executor(primary_llm)
-        result = invoke_agent_with_retry(primary_executor, input_data)
+        primary_executor = await build_agent_executor(primary_llm)
+        result = await invoke_agent_with_retry(primary_executor, input_data)
         raw_response = result.get("output", "")
 
-        # Extract tool names and citations from intermediate steps
+        # Check for HITL triggers
+        pending_task_id = hitl_manager.check_and_trigger(result)
+        if pending_task_id:
+            return {
+                "session_id": session_id,
+                "response": f"Your request has been paused for manual review (Task ID: {pending_task_id}). It requires approval before proceeding.",
+                "structured_output": None,
+                "tools_used": tools_used,
+                "citations": []
+            }
+
+        # Format citations from vector search (Week 3)
+        retrieved_docs = retrieve_documents(user_text, session_id=session_id, role_name=role_name)
+        citations = []
         for step in result.get("intermediate_steps", []):
             action = step[0]
             tool_result = step[1]
@@ -360,8 +279,8 @@ def get_underwriter_response(user_text: str, session_id: str = "default") -> dic
 
         try:
             fallback_llm = get_fallback_llm()
-            fallback_executor = build_agent_executor(fallback_llm)
-            result = fallback_executor.invoke(input_data)
+            fallback_executor = await build_agent_executor(fallback_llm)
+            result = await fallback_executor.ainvoke(input_data)
             raw_response = result.get("output", "")
 
             for step in result.get("intermediate_steps", []):
@@ -401,6 +320,15 @@ def get_underwriter_response(user_text: str, session_id: str = "default") -> dic
                 "Please try again in a moment, or simplify your query.\n\n"
                 f"Error details: {str(primary_error)[:200]}"
             )
+
+    # --- Sanitize raw_response (Anthropic returns list of content blocks) ---
+    if isinstance(raw_response, list):
+        raw_response = "".join(
+            block.get("text", "") if isinstance(block, dict) else str(block)
+            for block in raw_response
+        )
+    elif not isinstance(raw_response, str):
+        raw_response = str(raw_response)
 
     # --- Step 5: Parse structured output (OBJECTIVE 5) ---
     structured_output = parse_structured_output(raw_response)

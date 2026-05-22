@@ -1,0 +1,15 @@
+rules:
+  - id: "high_value_loan"
+    condition: "loan_amount > 5000000"
+    description: "Manual review required for loans over ₹50L"
+    requires_role: "senior_underwriter"
+    
+  - id: "high_dti_ratio"
+    condition: "dti_ratio > 0.5"
+    description: "Debt-to-Income ratio exceeds 50%"
+    requires_role: "senior_underwriter"
+    
+  - id: "low_credit_score"
+    condition: "credit_score < 600"
+    description: "Credit score is below minimum threshold"
+    requires_role: "credit_head"
